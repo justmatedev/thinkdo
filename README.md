@@ -1,5 +1,5 @@
 <p align="center">
-	<img alt="Thinkdo" title="Thinkdo" src="https://raw.githubusercontent.com/justmatedev/thinkdo/180c113ae06234e6092703d17aae00c239bddd5e/src/assets/logo.svg" width="250"> 
+	<img alt="Thinkdo" title="Thinkdo" src="https://raw.githubusercontent.com/justmatedev/thinkdo/a9aff6cbcc5b0a7d32211f80316e2c6eda0184a4/src/assets/logo.svg" width="250"> 
 </p>
 <br/>
 <p align="center">
