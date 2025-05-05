@@ -2,8 +2,8 @@ import { View, Text, Pressable } from "react-native"
 import Input from "../../../components/input"
 import { Dispatch, SetStateAction, useEffect, useState } from "react"
 import IconButton from "../../../components/iconButton"
-import { colors } from "../../../theme/colors"
-import { fontSize, iconSize } from "../../../theme/size"
+import { useColors } from "../../../theme/colors"
+import { useFontSize, useIconSize } from "../../../theme/size"
 import { fontFamily } from "../../../theme/fontFamily"
 import { useTagsStore } from "../../../store/tagsStore"
 import { useUserInfoStore } from "../../../store/userStore"
@@ -18,6 +18,9 @@ interface ItemProps {
   setTagIsEditing: Dispatch<SetStateAction<string | null>>
 }
 const Item = ({ data, tagIsEditing, setTagIsEditing }: ItemProps) => {
+  const colors = useColors()
+  const iconSize = useIconSize()
+  const fontSize = useFontSize()
   const { tags, removeTag, updateTag } = useTagsStore()
   const { user } = useUserInfoStore()
   const { setSyncTimeLocal } = useSyncStore()
@@ -40,7 +43,7 @@ const Item = ({ data, tagIsEditing, setTagIsEditing }: ItemProps) => {
     if (data !== newTagName) {
       const tagAlreadyExist = tags.some((tag) => tag === newTagName)
       if (tagAlreadyExist) {
-        showModal()
+        showModal(colors.background)
         modalStyle("Tag already exists", "ok")
         setModalAction(hideModal)
       } else {
@@ -119,7 +122,7 @@ const Item = ({ data, tagIsEditing, setTagIsEditing }: ItemProps) => {
             iconColor={colors.alert}
             iconSize={iconSize.regular}
             onPress={() => {
-              showModal()
+              showModal(colors.background)
               modalStyle("Do you want to delete the selected tag?", "alert")
               setModalAction(deleteTagFunc)
             }}
@@ -138,6 +141,7 @@ const Item = ({ data, tagIsEditing, setTagIsEditing }: ItemProps) => {
             style={{
               fontFamily: fontFamily.regular,
               fontSize: fontSize.regular,
+              color: colors.black,
             }}
           >
             {newTagName}

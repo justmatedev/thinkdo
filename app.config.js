@@ -4,7 +4,7 @@ export default {
   expo: {
     name: "Thinkdo",
     slug: "Thinkdo",
-    version: "1.1.1",
+    version: "1.1.2",
     orientation: "portrait",
     icon: "./assets/icon.png",
     userInterfaceStyle: "light",

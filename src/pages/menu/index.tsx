@@ -1,9 +1,9 @@
 import { Linking, Pressable, ScrollView, Text, View } from "react-native"
 import React from "react"
-import { colors } from "../../theme/colors"
+import { useColors } from "../../theme/colors"
 import { useNavigation } from "@react-navigation/native"
 import { fontFamily } from "../../theme/fontFamily"
-import { fontSize, iconSize } from "../../theme/size"
+import { useFontSize, useIconSize } from "../../theme/size"
 import { Ionicons } from "@expo/vector-icons"
 import { NativeStackNavigationProp } from "@react-navigation/native-stack"
 import { StackParamList } from "../../routes/app.routes"
@@ -18,8 +18,14 @@ import SvgLogo from "../../components/svgLogo"
 import { useNoteStore } from "../../store/noteStore"
 import { UserActiveProps } from "../../types/userActive.type"
 import { useTagsStore } from "../../store/tagsStore"
+import { useAppearenceStore } from "../../store/appearanceStore"
 
 const Menu = () => {
+  const colors = useColors()
+  const iconSize = useIconSize()
+  const fontSize = useFontSize()
+  const { setTheme, setFontSizeOption, setShowDateHome } = useAppearenceStore()
+
   const navigation = useNavigation<NativeStackNavigationProp<StackParamList>>()
   const { showModal, setModalAction, modalStyle, hideModal } = useModalStore()
   const { sync } = useSyncFirebase()
@@ -46,6 +52,9 @@ const Menu = () => {
         uid: "",
       }
       setUser(clearUser)
+      setTheme("Light")
+      setFontSizeOption("Medium")
+      setShowDateHome("Yes")
       clearNotes()
       clearTags()
       navigation.navigate("signin")
@@ -53,7 +62,7 @@ const Menu = () => {
   }
 
   const openGithub = () => {
-    const url = "https://github.com/justmatedev/Thinkdo"
+    const url = "https://github.com/justmatedev/thinkdo"
     Linking.openURL(url)
   }
 
@@ -64,8 +73,8 @@ const Menu = () => {
 
   return (
     <>
-      <Header />
-      <ScrollView style={{ backgroundColor: colors.backgroundLight }}>
+      <Header backgroundColor={colors.background} />
+      <ScrollView style={{ backgroundColor: colors.background }}>
         <View className="flex-1 items-center pt-10 px-4">
           <SvgLogo aspectRatio={0.07} />
 
@@ -81,9 +90,14 @@ const Menu = () => {
               iconName="person-outline"
             />
             <Option
+              title="Appearance"
+              action={() => navigation.navigate("appearance")}
+              iconName="brush-outline"
+            />
+            <Option
               title="Sync"
               action={() => {
-                showModal()
+                showModal(colors.background)
                 modalStyle(
                   "Do you want to sync your data to the cloud?",
                   "yes/no"
@@ -96,7 +110,7 @@ const Menu = () => {
             <Option
               title="Logout"
               action={() => {
-                showModal()
+                showModal(colors.background)
                 modalStyle("Do you really want to log out?", "alert")
                 setModalAction(logoutFunc)
               }}
@@ -108,10 +122,11 @@ const Menu = () => {
             style={{
               fontFamily: fontFamily.regular,
               fontSize: fontSize.regular,
+              color: colors.black,
             }}
             className="mt-8 mb-1"
           >
-            App Version: 1.1.1
+            App Version: 1.1.2
           </Text>
 
           <Pressable
@@ -122,6 +137,7 @@ const Menu = () => {
               style={{
                 fontFamily: fontFamily.regular,
                 fontSize: fontSize.regular,
+                color: colors.black,
               }}
               className="mr-2 pt-1"
             >
@@ -135,7 +151,11 @@ const Menu = () => {
           </Pressable>
 
           <Text
-            style={{ fontFamily: fontFamily.regular, fontSize: fontSize.small }}
+            style={{
+              fontFamily: fontFamily.regular,
+              fontSize: fontSize.small,
+              color: colors.black,
+            }}
             className="text-center my-2"
           >
             For any questions, errors, or suggestions, please email us at:

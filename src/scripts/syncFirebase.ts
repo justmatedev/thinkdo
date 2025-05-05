@@ -14,9 +14,11 @@ import { getDataNotes } from "../storage/notes"
 import { getDataTags } from "../storage/tags"
 import { formatDateToSave } from "./formatDate"
 import { useSyncStore } from "../store/syncStore"
+import { useAppearenceStore } from "../store/appearanceStore"
 
 export const useSyncFirebase = () => {
   const { setSyncTimeFirebase } = useSyncStore()
+  const { theme, fontSizeOption, showDateHome } = useAppearenceStore()
 
   let notesFirebase: NoteProps[] = []
   const getDocumentsFirebase = async (uid: string) => {
@@ -126,6 +128,9 @@ export const useSyncFirebase = () => {
     await updateDoc(docRef, {
       tags: tagsLocal,
       syncTime: dateNow,
+      theme: theme,
+      fontSizeOption: fontSizeOption,
+      showDateHome: showDateHome,
     }).then(() => {})
 
     setSyncTimeFirebase(dateNow)

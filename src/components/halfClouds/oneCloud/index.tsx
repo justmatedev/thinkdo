@@ -1,6 +1,6 @@
 import { View } from "react-native"
 import React from "react"
-import { colors } from "../../../theme/colors"
+import { useColors } from "../../../theme/colors"
 
 interface OneCloudProps {
   width: number
@@ -9,6 +9,7 @@ interface OneCloudProps {
   bottom?: boolean
 }
 const OneCloud = ({ width, yRandom, leftRandom, bottom }: OneCloudProps) => {
+  const colors = useColors()
   return (
     <>
       {bottom ? (

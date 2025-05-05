@@ -1,7 +1,8 @@
 import * as NavigationBar from "expo-navigation-bar"
-import { colors } from "../theme/colors"
+import { useColors } from "../theme/colors"
 
 async function navigationBarColor(color: string) {
+  const colors = useColors()
   try {
     if (color == colors.primary) {
       await NavigationBar.setButtonStyleAsync("light")

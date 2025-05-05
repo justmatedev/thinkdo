@@ -20,13 +20,4 @@ const storeDataTags = async (uid: string, tags: string[]) => {
   }
 }
 
-const removeValueTags = async (uid: string) => {
-  const key = `@${uid}tags`
-  try {
-    await AsyncStorage.removeItem(key)
-  } catch (e) {
-    // remove error
-  }
-}
-
-export { getDataTags, storeDataTags, removeValueTags }
+export { getDataTags, storeDataTags }

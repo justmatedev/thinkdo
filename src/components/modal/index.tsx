@@ -2,14 +2,16 @@ import React, { useState } from "react"
 import { View, Text, Dimensions, Pressable } from "react-native"
 import { useModalStore } from "../../store/modalStore"
 import { fontFamily } from "../../theme/fontFamily"
-import { fontSize } from "../../theme/size"
+import { useFontSize } from "../../theme/size"
 import Button from "../button"
-import { colors } from "../../theme/colors"
+import { useColors } from "../../theme/colors"
 import Input from "../input"
 
 const overlayColor = "rgba(0, 0, 0, 0.5)"
 
 export const ModalComponent = () => {
+  const colors = useColors()
+  const fontSize = useFontSize()
   const {
     isVisible,
     message,
@@ -53,6 +55,7 @@ export const ModalComponent = () => {
             style={{
               fontFamily: fontFamily.medium,
               fontSize: fontSize.regular,
+              color: colors.black,
             }}
           >
             {message}
@@ -106,7 +109,15 @@ export const ModalComponent = () => {
           )}
           {modalType === "password" && (
             <View className="gap-2 mt-4">
-              <Text>Confirm password: </Text>
+              <Text
+                style={{
+                  fontFamily: fontFamily.regular,
+                  fontSize: fontSize.regular,
+                  color: colors.black,
+                }}
+              >
+                Confirm password:
+              </Text>
               <Input
                 value={inputValue}
                 onChangeText={(text) => setInputValue(text)}

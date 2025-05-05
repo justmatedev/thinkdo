@@ -1,8 +1,8 @@
 import { Pressable, Text } from "react-native"
 import React, { useState } from "react"
-import { colors } from "../../theme/colors"
+import { useColors } from "../../theme/colors"
 import { Ionicons } from "@expo/vector-icons"
-import { fontSize, iconSize } from "../../theme/size"
+import { useFontSize, useIconSize } from "../../theme/size"
 import { fontFamily } from "../../theme/fontFamily"
 import { useNavigation } from "@react-navigation/native"
 import { NativeStackNavigationProp } from "@react-navigation/native-stack"
@@ -14,12 +14,15 @@ interface ItemProps {
   activeTags?: string[]
 }
 const Item = ({ data, action, activeTags }: ItemProps) => {
+  const colors = useColors()
+  const iconSize = useIconSize()
+  const fontSize = useFontSize()
   const navigation = useNavigation<NativeStackNavigationProp<StackParamList>>()
   const [isPressed, setIsPressed] = useState(false)
 
   return (
     <Pressable
-      className={` rounded-lg h-9 justify-center transition-opacity duration-100 
+      className={`rounded-lg h-9 justify-center transition-opacity duration-100 pt-0.5
         ${isPressed && action ? "opacity-50" : "opacity-100"}
         ${!action && !data ? "mr-0" : "mr-2"}
         `}
@@ -43,7 +46,11 @@ const Item = ({ data, action, activeTags }: ItemProps) => {
     >
       {data ? (
         <Text
-          style={{ fontFamily: fontFamily.regular, fontSize: fontSize.small }}
+          style={{
+            fontFamily: fontFamily.regular,
+            fontSize: fontSize.small,
+            color: colors.black,
+          }}
           className="px-3 py-1"
         >
           #{data}

@@ -1,6 +1,6 @@
 import { View, Text, StatusBar } from "react-native"
-import { fontSize, iconSize } from "../../theme/size"
-import { colors } from "../../theme/colors"
+import { useFontSize, useIconSize } from "../../theme/size"
+import { useColors } from "../../theme/colors"
 import { useNavigation } from "@react-navigation/native"
 import { NativeStackNavigationProp } from "@react-navigation/native-stack"
 import { StackParamList } from "../../routes/app.routes"
@@ -10,13 +10,14 @@ import { useUserInfoStore } from "../../store/userStore"
 import SvgLogo from "../svgLogo"
 
 interface HeaderProps {
-  backgroundColor?: string
+  backgroundColor: string
   forHome?: boolean
 }
-const Header = ({
-  backgroundColor = colors.backgroundLight,
-  forHome,
-}: HeaderProps) => {
+const Header = ({ backgroundColor, forHome }: HeaderProps) => {
+  const colors = useColors()
+  const iconSize = useIconSize()
+  const fontSize = useFontSize()
+
   const height = StatusBar.currentHeight
   const navigation = useNavigation<NativeStackNavigationProp<StackParamList>>()
   const { user } = useUserInfoStore()
@@ -37,6 +38,7 @@ const Header = ({
               style={{
                 fontFamily: fontFamily.regular,
                 fontSize: fontSize.regular,
+                color: colors.black,
               }}
               className="ml-4"
             >

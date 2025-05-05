@@ -1,6 +1,4 @@
-import { colors } from "../theme/colors"
-
-const returnHexColor = (color: string): string => {
+const returnHexColor = (colors: any, color: string): string => {
   switch (color) {
     case "red":
       return colors.noteColorRed
@@ -17,11 +15,11 @@ const returnHexColor = (color: string): string => {
     case "violet":
       return colors.noteColorViolet
     default:
-      return colors.backgroundLight
+      return colors.background
   }
 }
 
-const returnNameColor = (color: string): string => {
+const returnNameColor = (colors: any, color: string): string => {
   switch (color) {
     case colors.noteColorRed:
       return "red"

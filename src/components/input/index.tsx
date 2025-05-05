@@ -1,8 +1,8 @@
 import { View, TextInput, TextInputProps, Text } from "react-native"
 import React, { useState } from "react"
 import { fontFamily } from "../../theme/fontFamily"
-import { fontSize, iconSize } from "../../theme/size"
-import { colors } from "../../theme/colors"
+import { useFontSize, useIconSize } from "../../theme/size"
+import { useColors } from "../../theme/colors"
 import IconButton from "../iconButton"
 import { Ionicons } from "@expo/vector-icons"
 
@@ -22,13 +22,20 @@ const Input = ({
   label,
   ...rest
 }: InputProps) => {
+  const colors = useColors()
+  const iconSize = useIconSize()
+  const fontSize = useFontSize()
   const [isFocused, setIsFocused] = useState(false)
 
   return (
     <>
       {label && (
         <Text
-          style={{ fontFamily: fontFamily.regular, fontSize: fontSize.regular }}
+          style={{
+            fontFamily: fontFamily.regular,
+            fontSize: fontSize.regular,
+            color: colors.black,
+          }}
           className="left-1 mb-0"
         >
           {label}:
@@ -39,7 +46,7 @@ const Input = ({
           borderColor: isFocused ? colors.primary : colors.borderColorLight,
           borderWidth: noBorder ? 0 : 1,
         }}
-        className="w-full rounded-lg flex-row items-center h-12"
+        className="w-full rounded-lg flex-row items-center"
       >
         <TextInput
           {...rest}
@@ -48,10 +55,12 @@ const Input = ({
           style={{
             fontFamily: fontFamily.regular,
             fontSize: fontSize.regular,
+            color: colors.black,
           }}
-          className="flex-1 pl-3 top-1"
+          className="flex-1 pl-3 top-0.5"
           cursorColor={colors.primary}
           selectionColor={colors.primaryAlfa}
+          placeholderTextColor={colors.placeHolder}
         />
         {icon && iconName && action && (
           <IconButton

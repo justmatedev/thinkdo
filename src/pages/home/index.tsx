@@ -7,7 +7,7 @@ import { StackParamList } from "../../routes/app.routes"
 import { useNoteStore } from "../../store/noteStore"
 import { useUserInfoStore } from "../../store/userStore"
 import Header from "../../components/header"
-import { colors } from "../../theme/colors"
+import { useColors } from "../../theme/colors"
 import navigationBarColor from "../../scripts/navigationBarColor"
 import FabButton from "./fabButton"
 import DraggableFlatList from "react-native-draggable-flatlist"
@@ -15,14 +15,19 @@ import { NoteProps } from "../../types/note.type"
 import Input from "../../components/input"
 import ListTags from "../../components/listTags"
 import IconButton from "../../components/iconButton"
-import { fontSize, iconSize } from "../../theme/size"
+import { useFontSize, useIconSize } from "../../theme/size"
 import { fontFamily } from "../../theme/fontFamily"
 import { useModalStore } from "../../store/modalStore"
 import Loading from "../../components/loading"
 import NoNotes from "./noNotes"
 import { useTagsStore } from "../../store/tagsStore"
+import { useAppearenceStore } from "../../store/appearanceStore"
 
 const Home = () => {
+  const { theme } = useAppearenceStore()
+  const colors = useColors()
+  const iconSize = useIconSize()
+  const fontSize = useFontSize()
   const navigation = useNavigation<NativeStackNavigationProp<StackParamList>>()
   const { notes, setNotes, removeNote } = useNoteStore()
   const { user } = useUserInfoStore()
@@ -42,7 +47,7 @@ const Home = () => {
 
   useEffect(() => {
     if (isFocused) {
-      navigationBarColor(colors.backgroundLight)
+      navigationBarColor(colors.background)
 
       if (filterOn) {
         if (searchText) {
@@ -157,7 +162,7 @@ const Home = () => {
   if (loadingData) {
     return (
       <View
-        style={{ backgroundColor: colors.backgroundLight }}
+        style={{ backgroundColor: colors.background }}
         className="flex-1 justify-center items-center"
       >
         <Loading color={colors.primary} />
@@ -168,11 +173,11 @@ const Home = () => {
     <>
       <StatusBar
         translucent={true}
-        barStyle="dark-content"
+        barStyle={theme === "Dark" ? "light-content" : "dark-content"}
         backgroundColor="transparent"
       />
-      <Header forHome />
-      <View style={{ backgroundColor: colors.backgroundLight, flex: 1 }}>
+      <Header forHome backgroundColor={colors.background} />
+      <View style={{ backgroundColor: colors.background, flex: 1 }}>
         <View className="mx-2 my-4 gap-2 ">
           {showOptions ? (
             <>
@@ -185,6 +190,7 @@ const Home = () => {
                   style={{
                     fontFamily: fontFamily.semiBold,
                     fontSize: fontSize.regular,
+                    color: colors.black,
                   }}
                 >
                   {selectedNotes.length === 1
@@ -206,7 +212,7 @@ const Home = () => {
                     iconColor="red"
                     iconSize={iconSize.regular}
                     onPress={() => {
-                      showModal()
+                      showModal(colors.background)
                       if (selectedNotes.length == 1) {
                         modalStyle(
                           "Do you want to delete the note selected?",

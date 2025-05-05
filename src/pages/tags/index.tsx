@@ -6,9 +6,9 @@ import { useUserInfoStore } from "../../store/userStore"
 import { useSyncStore } from "../../store/syncStore"
 import { formatDateToSave } from "../../scripts/formatDate"
 import Header from "../../components/header"
-import { colors } from "../../theme/colors"
+import { useColors } from "../../theme/colors"
 import { Ionicons } from "@expo/vector-icons"
-import { fontSize, iconSize } from "../../theme/size"
+import { useFontSize, useIconSize } from "../../theme/size"
 import Input from "../../components/input"
 import { useModalStore } from "../../store/modalStore"
 import { fontFamily } from "../../theme/fontFamily"
@@ -16,6 +16,9 @@ import { useIsFocused } from "@react-navigation/native"
 import navigationBarColor from "../../scripts/navigationBarColor"
 
 const Tags = () => {
+  const colors = useColors()
+  const iconSize = useIconSize()
+  const fontSize = useFontSize()
   const { tags, addTag } = useTagsStore()
   const { user } = useUserInfoStore()
   const { setSyncTimeLocal } = useSyncStore()
@@ -28,7 +31,7 @@ const Tags = () => {
 
   useEffect(() => {
     if (isFocused) {
-      navigationBarColor(colors.backgroundLight)
+      navigationBarColor(colors.background)
     }
   }, [isFocused])
 
@@ -36,7 +39,7 @@ const Tags = () => {
     setTagIsEditing("")
     const tagAlreadyExist = tags.some((tag) => tag === newTag)
     if (tagAlreadyExist) {
-      showModal()
+      showModal(colors.background)
       modalStyle("Tag already exists", "ok")
       setModalAction(hideModal)
     } else {
@@ -50,9 +53,9 @@ const Tags = () => {
 
   return (
     <>
-      <Header />
+      <Header backgroundColor={colors.background} />
       <ScrollView
-        style={{ backgroundColor: colors.backgroundLight }}
+        style={{ backgroundColor: colors.background }}
         className="flex-1 px-4"
       >
         <Ionicons
@@ -63,7 +66,11 @@ const Tags = () => {
         />
         <Text
           className="self-center mb-10 mt-4"
-          style={{ fontFamily: fontFamily.semiBold, fontSize: fontSize.large }}
+          style={{
+            fontFamily: fontFamily.semiBold,
+            fontSize: fontSize.large,
+            color: colors.black,
+          }}
         >
           Tags
         </Text>

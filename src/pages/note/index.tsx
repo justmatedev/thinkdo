@@ -15,10 +15,9 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack"
 import { useUserInfoStore } from "../../store/userStore"
 import { useUniqueId } from "../../scripts/useUniqueId"
 import Header from "../../components/header"
-import { colors } from "../../theme/colors"
 import { returnHexColor, returnNameColor } from "../../scripts/colorConverter"
 import { fontFamily } from "../../theme/fontFamily"
-import { fontSize, iconSize } from "../../theme/size"
+import { useFontSize, useIconSize } from "../../theme/size"
 import navigationBarColor from "../../scripts/navigationBarColor"
 import IconButton from "../../components/iconButton"
 import ColorCircle from "./colorCircle"
@@ -26,6 +25,7 @@ import { useModalStore } from "../../store/modalStore"
 import ListTags from "../../components/listTags"
 import { formatDateToSave, formatDateToShow } from "../../scripts/formatDate"
 import { useSyncStore } from "../../store/syncStore"
+import { useColors } from "../../theme/colors"
 
 type NoteRouteProp = RouteProp<StackParamList, "note">
 
@@ -36,6 +36,9 @@ interface NoteConstValuesProps {
 }
 
 const Note = () => {
+  const colors = useColors()
+  const iconSize = useIconSize()
+  const fontSize = useFontSize()
   const route = useRoute<NoteRouteProp>()
   const navigation = useNavigation<NativeStackNavigationProp<StackParamList>>()
   const data = route.params?.data
@@ -50,8 +53,9 @@ const Note = () => {
   const [title, setTitle] = useState(data ? data.title : "")
   const [contentText, setContentText] = useState(data ? data.contentText : "")
   const [backgroundColor, setBackgroundColor] = useState<string>(
-    returnHexColor(data ? data.backgroundColor : colors.secondary)
+    returnHexColor(colors, data ? data.backgroundColor : colors.background)
   )
+
   const [activeTags, setActiveTags] = useState<string[]>(data ? data.tags : [])
   const [lastTimeEdit, setLastTimeEdit] = useState(
     data ? data.lastEditTime : ""
@@ -93,9 +97,10 @@ const Note = () => {
     const dateNow = formatDateToSave(new Date())
     const newId = generateId()
     const uid = user.uid
+    const background = returnNameColor(colors, backgroundColor)
 
     const note: NoteProps = {
-      backgroundColor: returnNameColor(backgroundColor),
+      backgroundColor: background,
       contentText: contentText,
       createdAt: dateNow,
       id: newId,
@@ -126,9 +131,10 @@ const Note = () => {
 
   const updateNoteFunc = () => {
     const dateNow = formatDateToSave(new Date())
+    const background = returnNameColor(colors, backgroundColor)
 
     const note: NoteProps = {
-      backgroundColor: returnNameColor(backgroundColor),
+      backgroundColor: background,
       contentText: contentText,
       createdAt: noteConstValues.createdAt,
       id: noteConstValues.id,
@@ -217,7 +223,7 @@ const Note = () => {
           <View
             className="m-2 p-2 rounded-lg items-end"
             style={{
-              backgroundColor: "rgba(255,255,255,0.3)",
+              backgroundColor: colors.noteOptionsBackground,
               borderColor: colors.borderColorLight,
               borderWidth: 1,
             }}
@@ -232,8 +238,8 @@ const Note = () => {
               showsHorizontalScrollIndicator={false}
             >
               <ColorCircle
-                color={colors.backgroundLight}
-                onPress={() => changeColor(colors.backgroundLight)}
+                color={colors.background}
+                onPress={() => changeColor(colors.background)}
               />
               <ColorCircle
                 color={colors.noteColorRed}
@@ -291,7 +297,15 @@ const Note = () => {
                   iconName="time-outline"
                   iconSize={iconSize.regular}
                 />
-                <Text>{lastTimeEdit && formatDateToShow(lastTimeEdit)}</Text>
+                <Text
+                  style={{
+                    fontFamily: fontFamily.regular,
+                    fontSize: fontSize.regular,
+                    color: colors.black,
+                  }}
+                >
+                  {lastTimeEdit && formatDateToShow(lastTimeEdit)}
+                </Text>
               </>
             )}
           </View>

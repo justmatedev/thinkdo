@@ -1,9 +1,9 @@
 import { Text, Pressable, PressableProps } from "react-native"
 import React, { useState } from "react"
-import { colors } from "../../theme/colors"
+import { useColors } from "../../theme/colors"
 import Loading from "../loading"
 import { fontFamily } from "../../theme/fontFamily"
-import { fontSize } from "../../theme/size"
+import { useFontSize } from "../../theme/size"
 
 interface PresseProps extends PressableProps {
   title: string
@@ -21,11 +21,13 @@ const Button = ({
   loading,
   ...rest
 }: PresseProps) => {
+  const colors = useColors()
+  const fontSize = useFontSize()
   const [isPressed, setIsPressed] = useState(false)
 
   return (
     <Pressable
-      className={`transition-opacity duration-100 items-center justify-center px-4 py-2 flex-1 rounded-lg h-12
+      className={`transition-opacity duration-100 items-center justify-center px-4 py-2 flex-1 rounded-lg
             ${isPressed ? "opacity-50" : "opacity-100"}`}
       onPressIn={() => {
         if (!loading) {

@@ -1,11 +1,12 @@
 import { Pressable, PressableProps } from "react-native"
 import React from "react"
-import { colors } from "../../../theme/colors"
+import { useColors } from "../../../theme/colors"
 
 interface ColorCircleProps extends PressableProps {
   color: string
 }
 const ColorCircle = ({ color, ...rest }: ColorCircleProps) => {
+  const colors = useColors()
   return (
     <Pressable
       style={{

@@ -19,13 +19,17 @@ import { useTagsStore } from "../store/tagsStore"
 import { getDataTags } from "../storage/tags"
 import { getDataSyncTime } from "../storage/syncTime"
 import { useSyncStore } from "../store/syncStore"
+import { useAppearenceStore } from "../store/appearanceStore"
+import { AppearenceProps } from "../types/appearence.type"
+import { getDataAppearence } from "../storage/appearence"
 
 export const useEnterUser = () => {
-  const { setUser } = useUserInfoStore()
   const navigation = useNavigation<NativeStackNavigationProp<StackParamList>>()
+  const { setUser } = useUserInfoStore()
   const { setNotes } = useNoteStore()
   const { setTags } = useTagsStore()
   const { setSyncTimeLocal, setSyncTimeFirebase } = useSyncStore()
+  const { setTheme, setFontSizeOption, setShowDateHome } = useAppearenceStore()
 
   let notesFirebase: NoteProps[] = []
   const getNotesFirebase = async (uid: string) => {
@@ -60,6 +64,9 @@ export const useEnterUser = () => {
 
   let tagsFirebase: string[] = []
   let syncTimeFirebase: string
+  let themeFirebase: AppearenceProps["theme"]
+  let fontSizeOptionFirebase: AppearenceProps["fontSizeOption"]
+  let showDateHomeFirebase: AppearenceProps["showDateHome"]
   const getUserData = async (uid: string) => {
     const docRef = doc(db, "userData", uid)
     const docSnap = await getDoc(docRef)
@@ -67,6 +74,9 @@ export const useEnterUser = () => {
     if (docSnap.exists()) {
       tagsFirebase = docSnap.data().tags
       syncTimeFirebase = docSnap.data().syncTime
+      themeFirebase = docSnap.data().theme
+      fontSizeOptionFirebase = docSnap.data().fontSizeOption
+      showDateHomeFirebase = docSnap.data().showDateHome
     }
   }
 
@@ -88,6 +98,14 @@ export const useEnterUser = () => {
     }
   }
 
+  let appearenceLocal: AppearenceProps
+  const getAppearenceLocal = async (uid: string) => {
+    const appearence = await getDataAppearence(uid)
+    if (appearence) {
+      appearenceLocal = appearence
+    }
+  }
+
   const enterUser = async (user: UserActiveProps) => {
     if (
       user.displayName !== null &&
@@ -104,40 +122,64 @@ export const useEnterUser = () => {
         setSyncTimeLocal(user.uid, syncTimeLocal)
         setSyncTimeFirebase(syncTimeFirebase)
         if (dateLocal >= dateFirebase) {
-          // both local and firebase data exist, but local data is more recent
+          // local and firebase data exist, but local data is more recent
           await getNotesLocal(user.uid)
           await getTagsLocal(user.uid)
+          await getAppearenceLocal(user.uid)
 
           setNotes(user.uid, notesLocal)
           setTags(user.uid, tagsLocal)
+          if (appearenceLocal) {
+            setTheme(appearenceLocal.theme)
+            setFontSizeOption(appearenceLocal.fontSizeOption)
+            setShowDateHome(appearenceLocal.showDateHome)
+          }
         } else {
-          // both local and firebase data exist, but firebase data is more recent
+          // local and firebase data exist, but firebase data is more recent
           await getNotesFirebase(user.uid)
-          await getNotesLocal(user.uid)
 
           setNotes(user.uid, [...notesFirebase])
           setTags(user.uid, tagsFirebase)
+          if (themeFirebase && fontSizeOptionFirebase && showDateHomeFirebase) {
+            setTheme(themeFirebase)
+            setFontSizeOption(fontSizeOptionFirebase)
+            setShowDateHome(showDateHomeFirebase)
+            console.log("themeFirebase: ", themeFirebase)
+            console.log("fontSizeOptionFirebase: ", fontSizeOptionFirebase)
+            console.log("showDateHomeFirebase: ", showDateHomeFirebase)
+          }
         }
       } else if (syncTimeLocal) {
         // only local data exists
         setSyncTimeLocal(user.uid, syncTimeLocal)
+        setSyncTimeFirebase(null)
         await getNotesLocal(user.uid)
         await getTagsLocal(user.uid)
+        await getAppearenceLocal(user.uid)
 
         setNotes(user.uid, notesLocal)
         setTags(user.uid, tagsLocal)
+        if (appearenceLocal) {
+          setTheme(appearenceLocal.theme)
+          setFontSizeOption(appearenceLocal.fontSizeOption)
+          setShowDateHome(appearenceLocal.showDateHome)
+        }
       } else if (syncTimeFirebase) {
         // only firebase data exists
         setSyncTimeFirebase(syncTimeFirebase)
         await getNotesFirebase(user.uid)
-        await getNotesLocal(user.uid)
 
         setNotes(user.uid, notesFirebase)
         setTags(user.uid, tagsFirebase)
+        if (themeFirebase && fontSizeOptionFirebase && showDateHomeFirebase) {
+          setTheme(themeFirebase)
+          setFontSizeOption(fontSizeOptionFirebase)
+          setShowDateHome(showDateHomeFirebase)
+        }
       } else {
         // no backup data exists
 
-        setSyncTimeFirebase(syncTimeFirebase)
+        setSyncTimeFirebase(null)
         setNotes(user.uid, [])
         setTags(user.uid, [])
       }
@@ -149,6 +191,11 @@ export const useEnterUser = () => {
       notesLocal = []
       tagsFirebase = []
       tagsLocal = []
+      appearenceLocal = {
+        theme: "Light",
+        fontSizeOption: "Medium",
+        showDateHome: "Yes",
+      }
     }
   }
 

@@ -4,8 +4,8 @@ import { storeDataSyncTime } from "../../storage/syncTime"
 interface SyncStoreProps {
   syncTimeLocal: string
   setSyncTimeLocal: (uid: string, syncTimeLocal: string) => void
-  syncTimeFirebase: string
-  setSyncTimeFirebase: (syncTimeFirebase: string) => void
+  syncTimeFirebase: string | null
+  setSyncTimeFirebase: (syncTimeFirebase: string | null) => void
 }
 
 export const useSyncStore = create<SyncStoreProps>((set) => ({

@@ -1,14 +1,20 @@
 import { View, Text } from "react-native"
 import React from "react"
-import { colors } from "../../../theme/colors"
+import { useColors } from "../../../theme/colors"
 import { fontFamily } from "../../../theme/fontFamily"
-import { fontSize } from "../../../theme/size"
+import { useFontSize } from "../../../theme/size"
 
 const NoNotes = () => {
+  const colors = useColors()
+  const fontSize = useFontSize()
   return (
     <View className=" flex-1 items-center">
       <Text
-        style={{ fontFamily: fontFamily.regular, fontSize: fontSize.large }}
+        style={{
+          fontFamily: fontFamily.regular,
+          fontSize: fontSize.large,
+          color: colors.black,
+        }}
         className="my-10"
       >
         Create your first note...

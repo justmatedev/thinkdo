@@ -1,4 +1,3 @@
-import "./reanimatedConfig" // essa importacao e arquivo só serve para parar aquele aviso no console sobre o reanimated
 import "./global.css"
 import { NavigationContainer } from "@react-navigation/native"
 import Routes from "./src/routes/app.routes"

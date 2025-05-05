@@ -5,7 +5,6 @@ import {
   StatusBar,
   Text,
   View,
-  Dimensions,
 } from "react-native"
 import React, { useEffect, useState } from "react"
 import { useIsFocused, useNavigation } from "@react-navigation/native"
@@ -22,14 +21,16 @@ import { UserActiveProps } from "../../types/userActive.type"
 import { useEnterUser } from "../../scripts/enterUser"
 import SvgLogo from "../../components/svgLogo"
 import navigationBarColor from "../../scripts/navigationBarColor"
-import { colors } from "../../theme/colors"
+import { useColors } from "../../theme/colors"
 import Input from "../../components/input"
 import { useErrors } from "../../errors/firebase"
 import { fontFamily } from "../../theme/fontFamily"
-import { fontSize } from "../../theme/size"
+import { useFontSize } from "../../theme/size"
 import HalfClouds from "../../components/halfClouds"
 
 const SignIn = () => {
+  const colors = useColors()
+  const fontSize = useFontSize()
   const navigation = useNavigation<NativeStackNavigationProp<StackParamList>>()
   const { showModal, modalStyle, setModalAction, hideModal } = useModalStore()
   const { enterUser } = useEnterUser()
@@ -71,7 +72,7 @@ const SignIn = () => {
       const trueEmail = reg.test(String(email).toLowerCase())
 
       if (!trueEmail) {
-        showModal()
+        showModal(colors.background)
         modalStyle("Invalid email", "ok")
         setModalAction(hideModal)
         return
@@ -89,12 +90,12 @@ const SignIn = () => {
           await enterUser(userLogged)
         })
         .catch((error) => {
-          showModal()
+          showModal(colors.background)
           errorsLogin(error.code)
         })
       setBtnLoading(false)
     } else {
-      showModal()
+      showModal(colors.background)
       if (!email) {
         modalStyle("Email not filled", "ok")
       } else {
@@ -135,10 +136,7 @@ const SignIn = () => {
         barStyle="light-content"
         backgroundColor="transparent"
       />
-      <View
-        className="flex-1"
-        style={{ backgroundColor: colors.backgroundLight }}
-      >
+      <View className="flex-1" style={{ backgroundColor: colors.background }}>
         <View
           style={{
             backgroundColor: colors.primary,
@@ -175,7 +173,7 @@ const SignIn = () => {
 
           <Pressable
             onPress={() => {
-              showModal()
+              showModal(colors.background)
               modalStyle("Enter your email to send the password reset", "input")
               setModalAction(forgotPassword)
             }}
@@ -206,6 +204,7 @@ const SignIn = () => {
                 style={{
                   fontFamily: fontFamily.regular,
                   fontSize: fontSize.regular,
+                  color: colors.black,
                 }}
               >
                 Don't have account?

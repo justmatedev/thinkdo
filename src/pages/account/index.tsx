@@ -1,8 +1,8 @@
 import { View, Text, ScrollView } from "react-native"
 import React, { useState } from "react"
 import { Ionicons } from "@expo/vector-icons"
-import { colors } from "../../theme/colors"
-import { fontSize, iconSize } from "../../theme/size"
+import { useColors } from "../../theme/colors"
+import { useFontSize, useIconSize } from "../../theme/size"
 import { fontFamily } from "../../theme/fontFamily"
 import Header from "../../components/header"
 import Input from "../../components/input"
@@ -22,6 +22,9 @@ import { useErrors } from "../../errors/firebase"
 import { FirebaseError } from "firebase/app"
 
 const Account = () => {
+  const colors = useColors()
+  const iconSize = useIconSize()
+  const fontSize = useFontSize()
   const { user, setUser } = useUserInfoStore()
   const { showModal, modalStyle, setModalAction, hideModal } = useModalStore()
   const { errorsLogin, errorsEmail } = useErrors()
@@ -34,7 +37,7 @@ const Account = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const mainFunc = () => {
-    showModal()
+    showModal(colors.background)
 
     if (name !== user.displayName || email !== user.email || password !== "") {
       let hasToChangeName = false
@@ -334,9 +337,9 @@ const Account = () => {
 
   return (
     <>
-      <Header />
+      <Header backgroundColor={colors.background} />
       <ScrollView
-        style={{ backgroundColor: colors.backgroundLight }}
+        style={{ backgroundColor: colors.background }}
         className="flex-1 px-4"
       >
         <Ionicons
@@ -347,7 +350,11 @@ const Account = () => {
         />
         <Text
           className="self-center mb-10 mt-4"
-          style={{ fontFamily: fontFamily.semiBold, fontSize: fontSize.large }}
+          style={{
+            fontFamily: fontFamily.semiBold,
+            fontSize: fontSize.large,
+            color: colors.black,
+          }}
         >
           Account
         </Text>

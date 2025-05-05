@@ -1,7 +1,7 @@
 import { View, Text, Pressable } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
-import { fontSize, iconSize } from "../../../theme/size"
-import { colors } from "../../../theme/colors"
+import { useFontSize, useIconSize } from "../../../theme/size"
+import { useColors } from "../../../theme/colors"
 import { fontFamily } from "../../../theme/fontFamily"
 import { useState } from "react"
 import { formatDateToShow } from "../../../scripts/formatDate"
@@ -14,6 +14,9 @@ interface OptionProps {
   showSyncTime?: boolean
 }
 const Option = ({ action, title, iconName, showSyncTime }: OptionProps) => {
+  const colors = useColors()
+  const iconSize = useIconSize()
+  const fontSize = useFontSize()
   const { syncTimeFirebase } = useSyncStore()
   const [isPressed, setIsPressed] = useState(false)
 
@@ -49,7 +52,11 @@ const Option = ({ action, title, iconName, showSyncTime }: OptionProps) => {
       </View>
       {showSyncTime && syncTimeFirebase && (
         <Text
-          style={{ fontFamily: fontFamily.regular, fontSize: fontSize.small }}
+          style={{
+            fontFamily: fontFamily.regular,
+            fontSize: fontSize.small,
+            color: colors.black,
+          }}
         >
           Last sync: {formatDateToShow(syncTimeFirebase)}
         </Text>

@@ -1,6 +1,6 @@
 import { TextInput, TextInputProps } from "react-native"
 import React from "react"
-import { colors } from "../../../theme/colors"
+import { useColors } from "../../../theme/colors"
 
 interface InputProps extends TextInputProps {
   fontFamily: string
@@ -9,15 +9,18 @@ interface InputProps extends TextInputProps {
 }
 
 const Input = ({ fontFamily, fontSize, expand, ...rest }: InputProps) => {
+  const colors = useColors()
   return (
     <TextInput
       {...rest}
       style={{
         fontFamily: fontFamily,
         fontSize: fontSize,
+        color: colors.black,
       }}
       cursorColor={colors.primaryAlfa}
       selectionColor={colors.primaryAlfa}
+      placeholderTextColor={colors.placeHolder}
     />
   )
 }

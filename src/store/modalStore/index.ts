@@ -1,5 +1,4 @@
 import { create } from "zustand"
-import { colors } from "../../theme/colors"
 
 interface ModalState {
   isVisible: boolean
@@ -11,7 +10,7 @@ interface ModalState {
   setModalAction: (action: (inputValue: string) => void | Promise<void>) => void
   executeModalAction: () => Promise<void>
 
-  showModal: (backgroundColor?: string) => void
+  showModal: (backgroundColor: string) => void
   hideModal: () => void
   modalStyle: (
     message: string,
@@ -53,7 +52,7 @@ export const useModalStore = create<ModalState>((set, get) => ({
     }
   },
 
-  showModal: (backgroundColor = colors.backgroundLight) => {
+  showModal: (backgroundColor) => {
     set({
       isVisible: true,
       backgroundColor,
@@ -63,7 +62,6 @@ export const useModalStore = create<ModalState>((set, get) => ({
   hideModal: () =>
     set({
       isVisible: false,
-      backgroundColor: colors.backgroundLight,
       inputValue: "",
     }),
 
