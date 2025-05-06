@@ -57,7 +57,7 @@ const Input = ({
             fontSize: fontSize.regular,
             color: colors.black,
           }}
-          className="flex-1 pl-3 top-0.5"
+          className="flex-1 pl-3 top-0.5 min-h-12"
           cursorColor={colors.primary}
           selectionColor={colors.primaryAlfa}
           placeholderTextColor={colors.placeHolder}
