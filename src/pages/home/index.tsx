@@ -267,7 +267,7 @@ const Home = () => {
                   setSelectedNotes={setSelectedNotes}
                 />
               )}
-              keyExtractor={(item) => item.id}
+              keyExtractor={(item, index) => item.id + "-" + index}
               onDragEnd={longPressAction}
               onDragBegin={(index) => setSelectedNotes([notes[index]])}
               contentContainerStyle={{ paddingBottom: 10 }}
