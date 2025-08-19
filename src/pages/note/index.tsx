@@ -292,20 +292,24 @@ const Note = () => {
           <View className="flex-row items-center">
             {lastTimeEdit && (
               <>
-                <IconButton
-                  iconColor={colors.black}
-                  iconName="time-outline"
-                  iconSize={iconSize.regular}
-                />
-                <Text
-                  style={{
-                    fontFamily: fontFamily.regular,
-                    fontSize: fontSize.regular,
-                    color: colors.black,
-                  }}
-                >
-                  {lastTimeEdit && formatDateToShow(lastTimeEdit)}
-                </Text>
+                <View>
+                  <IconButton
+                    iconColor={colors.black}
+                    iconName="time-outline"
+                    iconSize={iconSize.small}
+                  />
+                </View>
+                <View className="pt-1">
+                  <Text
+                    style={{
+                      fontFamily: fontFamily.regular,
+                      fontSize: fontSize.regular,
+                      color: colors.black,
+                    }}
+                  >
+                    {lastTimeEdit && formatDateToShow(lastTimeEdit)}
+                  </Text>
+                </View>
               </>
             )}
           </View>
