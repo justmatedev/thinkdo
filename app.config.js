@@ -6,13 +6,8 @@ export default {
     slug: "Thinkdo",
     version: "1.1.2",
     orientation: "portrait",
-    icon: "./assets/icon.png",
-    userInterfaceStyle: "light",
-    splash: {
-      image: "./assets/splash.png",
-      resizeMode: "contain",
-      backgroundColor: "#f6fce3",
-    },
+    icon: "./assets/adaptive-icon.png",
+    userInterfaceStyle: "automatic",
     ios: {
       supportsTablet: true,
     },
@@ -23,10 +18,22 @@ export default {
       },
       package: "com.justmate.thinkdo",
     },
-    web: {
-      favicon: "./assets/favicon.png",
-    },
-    plugins: ["expo-font"],
+    plugins: [
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          image: "./assets/splash-icon-light.png",
+          imageWidth: 200,
+          resizeMode: "contain",
+          backgroundColor: "#f6fce3",
+          dark: {
+            image: "./assets/splash-icon-light.png",
+            backgroundColor: "#141414",
+          },
+        },
+      ],
+    ],
     extra: {
       firebaseApiKey: process.env.FIREBASE_API_KEY,
       firebaseAuthDomain: process.env.FIREBASE_AUTH_DOMAIN,

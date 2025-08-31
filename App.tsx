@@ -1,5 +1,4 @@
 import "./reanimated-config.js"
-
 import "./global.css"
 import { NavigationContainer } from "@react-navigation/native"
 import Routes from "./src/routes/app.routes"

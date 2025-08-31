@@ -1,5 +1,5 @@
 import React from "react"
-import { View, Text, ScrollView, Pressable } from "react-native"
+import { View } from "react-native"
 import {
   useRoute,
   RouteProp,
@@ -17,15 +17,13 @@ import { useUniqueId } from "../../scripts/useUniqueId"
 import Header from "../../components/header"
 import { returnHexColor, returnNameColor } from "../../scripts/colorConverter"
 import { fontFamily } from "../../theme/fontFamily"
-import { useFontSize, useIconSize } from "../../theme/size"
+import { useFontSize } from "../../theme/size"
 import navigationBarColor from "../../scripts/navigationBarColor"
-import IconButton from "../../components/iconButton"
-import ColorCircle from "./colorCircle"
 import { useModalStore } from "../../store/modalStore"
-import ListTags from "../../components/listTags"
-import { formatDateToSave, formatDateToShow } from "../../scripts/formatDate"
+import { formatDateToSave } from "../../scripts/formatDate"
 import { useSyncStore } from "../../store/syncStore"
 import { useColors } from "../../theme/colors"
+import Options from "./options"
 
 type NoteRouteProp = RouteProp<StackParamList, "note">
 
@@ -37,7 +35,6 @@ interface NoteConstValuesProps {
 
 const Note = () => {
   const colors = useColors()
-  const iconSize = useIconSize()
   const fontSize = useFontSize()
   const route = useRoute<NoteRouteProp>()
   const navigation = useNavigation<NativeStackNavigationProp<StackParamList>>()
@@ -46,7 +43,7 @@ const Note = () => {
 
   const { addNote, updateNote, removeNote, notes, setNotes } = useNoteStore()
   const { user } = useUserInfoStore()
-  const { showModal, setModalAction, modalStyle, hideModal } = useModalStore()
+  const { hideModal } = useModalStore()
   const { generateId } = useUniqueId()
   const { setSyncTimeLocal } = useSyncStore()
 
@@ -219,133 +216,20 @@ const Note = () => {
           multiline
         />
 
-        {showOptions && (
-          <View
-            className="m-2 p-2 rounded-lg items-end"
-            style={{
-              backgroundColor: colors.noteOptionsBackground,
-              borderColor: colors.borderColorLight,
-              borderWidth: 1,
-            }}
-          >
-            <View className="pb-2">
-              <ListTags activeTags={activeTags} setActiveTags={setActiveTags} />
-            </View>
-            <ScrollView
-              className="pb-2"
-              contentContainerStyle={{ gap: 8 }}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-            >
-              <ColorCircle
-                color={colors.background}
-                onPress={() => changeColor(colors.background)}
-              />
-              <ColorCircle
-                color={colors.noteColorRed}
-                onPress={() => changeColor(colors.noteColorRed)}
-              />
-              <ColorCircle
-                color={colors.noteColorOrange}
-                onPress={() => changeColor(colors.noteColorOrange)}
-              />
-              <ColorCircle
-                color={colors.noteColorYellow}
-                onPress={() => changeColor(colors.noteColorYellow)}
-              />
-              <ColorCircle
-                color={colors.noteColorGreen}
-                onPress={() => changeColor(colors.noteColorGreen)}
-              />
-              <ColorCircle
-                color={colors.noteColorBlue}
-                onPress={() => changeColor(colors.noteColorBlue)}
-              />
-              <ColorCircle
-                color={colors.noteColorIndigo}
-                onPress={() => changeColor(colors.noteColorIndigo)}
-              />
-              <ColorCircle
-                color={colors.noteColorViolet}
-                onPress={() => changeColor(colors.noteColorViolet)}
-              />
-            </ScrollView>
-
-            <IconButton
-              iconName="trash"
-              iconColor={colors.white}
-              iconSize={iconSize.regular}
-              background={colors.alert}
-              full
-              onPress={() => {
-                showModal(backgroundColor)
-                modalStyle("Do you want to delete the note selected?", "alert")
-                setModalAction(delNote)
-              }}
-            />
-          </View>
-        )}
-        <Pressable
-          className="flex-row justify-between items-center"
-          onPress={() => setShowOptions(!showOptions)}
-        >
-          <View className="flex-row items-center">
-            {lastTimeEdit && (
-              <>
-                <View>
-                  <IconButton
-                    iconColor={colors.black}
-                    iconName="time-outline"
-                    iconSize={iconSize.small}
-                  />
-                </View>
-                <View className="pt-1">
-                  <Text
-                    style={{
-                      fontFamily: fontFamily.regular,
-                      fontSize: fontSize.regular,
-                      color: colors.black,
-                    }}
-                  >
-                    {lastTimeEdit && formatDateToShow(lastTimeEdit)}
-                  </Text>
-                </View>
-              </>
-            )}
-          </View>
-
-          <View className="flex-row items-center">
-            <IconButton
-              iconName="arrow-undo-outline"
-              iconColor={
-                undoStack.length <= 1 ? colors.primaryAlfa : colors.primary
-              }
-              iconSize={iconSize.regular}
-              onPress={undoStack.length <= 1 ? () => {} : undoFunc}
-              notTransparency={undoStack.length <= 1}
-            />
-
-            <IconButton
-              iconName="arrow-redo-outline"
-              iconColor={
-                redoStack.length == 0 ? colors.primaryAlfa : colors.primary
-              }
-              iconSize={iconSize.regular}
-              onPress={redoStack.length == 0 ? () => {} : redoFunc}
-              notTransparency={redoStack.length == 0}
-              className="mr-2"
-            />
-
-            <IconButton
-              iconName={
-                showOptions ? "chevron-down-outline" : "chevron-up-outline"
-              }
-              iconColor={colors.primary}
-              iconSize={iconSize.regular}
-              onPress={() => setShowOptions(!showOptions)}
-            />
-          </View>
-        </Pressable>
+        <Options
+          activeTags={activeTags}
+          backgroundColor={backgroundColor}
+          changeColor={changeColor}
+          delNote={delNote}
+          lastTimeEdit={lastTimeEdit}
+          redoFunc={redoFunc}
+          redoStack={redoStack}
+          setActiveTags={setActiveTags}
+          setShowOptions={setShowOptions}
+          showOptions={showOptions}
+          undoFunc={undoFunc}
+          undoStack={undoStack}
+        />
       </View>
     </>
   )
