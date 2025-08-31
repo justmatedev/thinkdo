@@ -1,5 +1,5 @@
 import React from "react"
-import { View } from "react-native"
+import { Text, View } from "react-native"
 import {
   useRoute,
   RouteProp,
@@ -17,7 +17,7 @@ import { useUniqueId } from "../../scripts/useUniqueId"
 import Header from "../../components/header"
 import { returnHexColor, returnNameColor } from "../../scripts/colorConverter"
 import { fontFamily } from "../../theme/fontFamily"
-import { useFontSize } from "../../theme/size"
+import { useFontSize, useIconSize } from "../../theme/size"
 import navigationBarColor from "../../scripts/navigationBarColor"
 import { useModalStore } from "../../store/modalStore"
 import { formatDateToSave } from "../../scripts/formatDate"
@@ -69,8 +69,9 @@ const Note = () => {
   const [undoStack, setUndoStack] = useState<string[]>(
     data ? [data.contentText] : []
   )
-
   const [redoStack, setRedoStack] = useState<string[]>([])
+
+  const [isEditing, setIsEditing] = useState<boolean>(data ? false : true)
 
   useEffect(() => {
     if (hasLoaded) {
@@ -201,20 +202,36 @@ const Note = () => {
           className="px-4 mt-4 h-16"
         />
 
-        <Input
-          placeholder="Content..."
-          value={contentText}
-          onChangeText={(text) => {
-            setContentText(text)
-            setUndoStack((prevState) => [...prevState, text])
-            setRedoStack([])
-          }}
-          fontFamily={fontFamily.regular}
-          fontSize={fontSize.regular}
-          textAlignVertical="top"
-          className="p-4 pb-2 flex-1"
-          multiline
-        />
+        {isEditing ? (
+          <Input
+            placeholder="Content..."
+            value={contentText}
+            onChangeText={(text) => {
+              setContentText(text)
+              setUndoStack((prevState) => [...prevState, text])
+              setRedoStack([])
+            }}
+            fontFamily={fontFamily.regular}
+            fontSize={fontSize.regular}
+            textAlignVertical="top"
+            className="p-4 pb-2 flex-1"
+            multiline
+          />
+        ) : (
+          <>
+            <Text
+              className="p-4 pb-2 flex-1"
+              style={{
+                fontFamily: fontFamily.regular,
+                fontSize: fontSize.regular,
+                color: contentText ? colors.black : colors.placeHolder,
+              }}
+              selectable
+            >
+              {contentText ? contentText : "Content..."}
+            </Text>
+          </>
+        )}
 
         <Options
           activeTags={activeTags}
@@ -229,6 +246,8 @@ const Note = () => {
           showOptions={showOptions}
           undoFunc={undoFunc}
           undoStack={undoStack}
+          isEditing={isEditing}
+          setIsEditing={setIsEditing}
         />
       </View>
     </>

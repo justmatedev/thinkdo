@@ -22,6 +22,8 @@ interface OptionsProps {
   undoFunc: () => void
   redoStack: string[]
   redoFunc: () => void
+  isEditing: boolean
+  setIsEditing: Dispatch<SetStateAction<boolean>>
 }
 
 const Options = ({
@@ -37,14 +39,29 @@ const Options = ({
   undoFunc,
   redoStack,
   redoFunc,
+  isEditing,
+  setIsEditing,
 }: OptionsProps) => {
   const colors = useColors()
   const iconSize = useIconSize()
-  const { showModal, setModalAction, modalStyle, hideModal } = useModalStore()
+  const { showModal, setModalAction, modalStyle } = useModalStore()
   const fontSize = useFontSize()
 
   return (
     <>
+      <View className="flex-row-reverse mb-4 ">
+        <Pressable
+          style={{ backgroundColor: colors.primary }}
+          className="rounded-md p-1"
+        >
+          <IconButton
+            iconName={isEditing ? "checkmark-outline" : "pencil-outline"}
+            iconColor={colors.black}
+            iconSize={iconSize.extraLarge}
+            onPress={() => setIsEditing(!isEditing)}
+          />
+        </Pressable>
+      </View>
       {showOptions && (
         <View
           className="m-2 p-2 rounded-lg items-end"

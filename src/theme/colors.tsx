@@ -35,7 +35,7 @@ export const useColors = () => {
 
     white: theme === "Light" ? "#EDEDED" : "#121212",
     black: theme === "Light" ? "#19191A" : "#E5E5E6",
-    placeHolder: theme === "Light" ? "#6D706F" : "#535356",
+    placeHolder: theme === "Light" ? "#6D706F" : "#A7A7AD",
 
     background: theme === "Light" ? "#f6fce3" : "#141414",
 
@@ -48,7 +48,7 @@ export const useColors = () => {
 
     noteColorRed: theme === "Light" ? "#EEBCBD" : "#731D1F",
     noteColorOrange: theme === "Light" ? "#EFDDBE" : "#B35D20",
-    noteColorYellow: theme === "Light" ? "#EFEBBE" : "#A29622",
+    noteColorYellow: theme === "Light" ? "#EFEBBE" : "#b48a22",
     noteColorGreen: theme === "Light" ? "#DAEFBE" : "#436318",
     noteColorBlue: theme === "Light" ? "#BECEEF" : "#2952A6",
     noteColorIndigo: theme === "Light" ? "#C8BEEF" : "#362186",
