@@ -27,10 +27,10 @@ Thinkdo is a mobile app designed to help you capture and organize your ideas qui
 ## Screenshots
 
 <p align="center">
-	<img alt="ScreenshotApp" title="ScreenshotApp" src="https://play-lh.googleusercontent.com/qS3GHvRUT6-eK9aKYoP7iel7oe69ZIKsBkWfqsuK7FH_phwozEa0bwkBzDGQAPYIQ0I=w2560-h1440" width="200"> 
-	<img alt="ScreenshotApp" title="ScreenshotApp" src="https://play-lh.googleusercontent.com/qJQqoMDhjLvP_ciO_bf2solVRGKAtt4pzeK1xYNovGw7GfWMO1qwFU77tyvVQA-lcQ-0=w2560-h1440" width="200"> 
-	<img alt="ScreenshotApp" title="ScreenshotApp" src="https://play-lh.googleusercontent.com/SPJRTZxA7L7w2xGu-IYtm0XMNcDGwkZoTTRCM7ZYt_tOXbAbFJwbNRxYC0YTbBRUi52r=w2560-h1440" width="200"> 
-	<img alt="ScreenshotApp" title="ScreenshotApp" src="https://play-lh.googleusercontent.com/6aMITqZ8CQgM5-O-kKZ-ImN2qMxLuyPar38hpK2hkhefRSa0t83ErxXh9cHZrHRn6Q=w2560-h1440" width="200"> 
+	<img alt="ScreenshotApp" title="ScreenshotApp" src="https://play-lh.googleusercontent.com/lzZ46wJ9b5qnSXXI89yBvmNDEQG4kA9-1u6Wg2dRUd16UghfCvrWTc-6c2HJ3g78Xbte=w2560-h1440" width="200"> 
+	<img alt="ScreenshotApp" title="ScreenshotApp" src="https://play-lh.googleusercontent.com/I9qLtxtGHPEx9TvPU7FRUR5ajMUHFVSqLK5XwJfSu9ed3SYLHMAi3-NAFzhdHYe2fMYQ=w2560-h1440" width="200"> 
+	<img alt="ScreenshotApp" title="ScreenshotApp" src="https://play-lh.googleusercontent.com/9MdVxs0hGahgazvrMgbos3IQBEfQs7vlYfGezrmiDgs_KonGXRjH9LtE5I4isFGGMQ44=w2560-h1440" width="200"> 
+	<img alt="ScreenshotApp" title="ScreenshotApp" src="https://play-lh.googleusercontent.com/RKEigIJakk6oUaPI21JvZ4kS_yPHOUOEgvKhSFxGGIswPpD8XIDR2yN1E1JhlV78IAE=w2560-h1440" width="200"> 
 </p>
 
 ## Features
