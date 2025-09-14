@@ -48,8 +48,12 @@ export const ModalComponent = () => {
         }}
       >
         <View
-          style={{ backgroundColor: backgroundColor }}
-          className="w-3/4 p-6 rounded-lg"
+          style={{
+            backgroundColor: backgroundColor,
+            borderWidth: 1,
+            borderColor: colors.borderColorLight,
+          }}
+          className="w-3/4 p-6 rounded-lg overflow-hidden"
         >
           <Text
             style={{

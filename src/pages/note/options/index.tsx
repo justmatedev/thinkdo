@@ -56,7 +56,7 @@ const Options = ({
         >
           <IconButton
             iconName={isEditing ? "checkmark-outline" : "pencil-outline"}
-            iconColor={colors.black}
+            iconColor={colors.justWhite}
             iconSize={iconSize.extraLarge}
             onPress={() => setIsEditing(!isEditing)}
           />

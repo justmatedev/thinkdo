@@ -27,7 +27,7 @@ const Item = ({ data, action, activeTags }: ItemProps) => {
         ${!action && !data ? "mr-0" : "mr-2"}
         `}
       style={{
-        backgroundColor: colors.secondaryAlfa,
+        backgroundColor: colors.secondary,
         borderWidth: 1,
         borderColor:
           data && activeTags?.includes(data)

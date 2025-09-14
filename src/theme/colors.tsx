@@ -3,8 +3,9 @@ import { useAppearenceStore } from "../store/appearanceStore"
 interface ColorProps {
   primary: string
   primaryAlfa: string
-  secondaryAlfa: string
+  secondary: string
 
+  justWhite: string
   white: string
   black: string
   placeHolder: string
@@ -31,8 +32,9 @@ export const useColors = () => {
   const colors: ColorProps = {
     primary: theme === "Light" ? "#674CE8" : "#9277ff",
     primaryAlfa: theme === "Light" ? "#674CE899" : "#B7ABF499",
-    secondaryAlfa: theme === "Light" ? "#f0facc99" : "#1E1E1E99",
+    secondary: theme === "Light" ? "#f0facc99" : "#1E1E1E99",
 
+    justWhite: "#EDEDED",
     white: theme === "Light" ? "#EDEDED" : "#121212",
     black: theme === "Light" ? "#19191A" : "#E5E5E6",
     placeHolder: theme === "Light" ? "#6D706F" : "#A7A7AD",
