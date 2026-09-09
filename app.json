@@ -47,6 +47,33 @@
         }
       ],
       [
+        "@react-native-community/datetimepicker",
+        {
+          "android": {
+            "datePicker": {
+              "colorAccent": {
+                "light": "#8B5CF6",
+                "dark": "#A78BFA"
+              },
+              "colorControlActivated": {
+                "light": "#8B5CF6",
+                "dark": "#A78BFA"
+              }
+            },
+            "timePicker": {
+              "headerBackground": {
+                "light": "#8B5CF6",
+                "dark": "#A78BFA"
+              },
+              "numbersSelectorColor": {
+                "light": "#8B5CF6",
+                "dark": "#A78BFA"
+              }
+            }
+          }
+        }
+      ],
+      [
         "react-native-android-widget",
         {
           "widgets": [

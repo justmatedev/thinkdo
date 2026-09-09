@@ -7,8 +7,8 @@ import type { ReminderWeekday } from "../../types/item";
 const WEEKDAYS: ReminderWeekday[] = [1, 2, 3, 4, 5, 6, 7];
 
 type Props = {
-  selected: ReminderWeekday;
-  onSelect: (weekday: ReminderWeekday) => void;
+  selected: ReminderWeekday[];
+  onToggle: (weekday: ReminderWeekday) => void;
 };
 
 function capitalizePt(label: string): string {
@@ -16,13 +16,13 @@ function capitalizePt(label: string): string {
   return label.charAt(0).toLocaleUpperCase("pt-BR") + label.slice(1);
 }
 
-export function ReminderWeekdayPicker({ selected, onSelect }: Props) {
+export function ReminderWeekdayPicker({ selected, onToggle }: Props) {
   const { colors } = useTheme();
 
   return (
     <View style={styles.root}>
       {WEEKDAYS.map((weekday) => {
-        const active = weekday === selected;
+        const active = selected.includes(weekday);
         const label = capitalizePt(weekdayFullLabelPt(weekday));
         return (
           <Pressable
@@ -30,7 +30,7 @@ export function ReminderWeekdayPicker({ selected, onSelect }: Props) {
             accessibilityRole="button"
             accessibilityLabel={label}
             accessibilityState={{ selected: active }}
-            onPress={() => onSelect(weekday)}
+            onPress={() => onToggle(weekday)}
             style={({ pressed }) => [
               styles.row,
               {

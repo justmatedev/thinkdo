@@ -21,7 +21,10 @@ import {
 type Props = {
   cancelLabel?: string;
   confirmLabel: string;
+  /** Confirm (right) button style */
   variant?: ModalActionVariant;
+  /** Cancel/secondary (left) button style — use "danger" for destructive actions */
+  cancelVariant?: ModalActionVariant;
   busy?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
@@ -31,12 +34,14 @@ export function ModalActionRow({
   cancelLabel = "Cancelar",
   confirmLabel,
   variant = "default",
+  cancelVariant = "default",
   busy = false,
   onCancel,
   onConfirm,
 }: Props) {
   const { colors } = useTheme();
   const confirm = getConfirmButtonColors(variant, colors);
+  const cancelIsDanger = cancelVariant === "danger";
 
   return (
     <View style={styles.row}>
@@ -50,13 +55,26 @@ export function ModalActionRow({
           styles.button,
           styles.cancel,
           {
-            borderColor: colors.border,
-            backgroundColor: pressed ? colors.surfaceMuted : colors.surface,
+            borderColor: cancelIsDanger ? colors.danger : colors.border,
+            backgroundColor: pressed
+              ? cancelIsDanger
+                ? colors.dangerSubtle
+                : colors.surfaceMuted
+              : cancelIsDanger
+                ? colors.dangerSubtle
+                : colors.surface,
             opacity: busy ? 0.5 : 1,
           },
         ]}
       >
-        <Text style={[styles.label, { color: colors.textPrimary }]}>
+        <Text
+          style={[
+            styles.label,
+            {
+              color: cancelIsDanger ? colors.danger : colors.textPrimary,
+            },
+          ]}
+        >
           {cancelLabel}
         </Text>
       </Pressable>

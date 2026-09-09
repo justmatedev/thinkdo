@@ -27,6 +27,11 @@ type Props = {
   onChange: (next: ItemReminder | null) => void;
 };
 
+type EditorSession = {
+  initial: ItemReminder;
+  canRemove: boolean;
+};
+
 export function ReminderSection({
   reminder,
   online,
@@ -36,13 +41,19 @@ export function ReminderSection({
   onChange,
 }: Props) {
   const { colors } = useTheme();
-  const [editorOpen, setEditorOpen] = useState(false);
+  const [editor, setEditor] = useState<EditorSession | null>(null);
   const disabled = !online;
 
   const addReminder = () => {
-    onChange(defaultReminderDraft());
-    setEditorOpen(true);
+    setEditor({ initial: defaultReminderDraft(), canRemove: false });
   };
+
+  const editReminder = () => {
+    if (!reminder) return;
+    setEditor({ initial: reminder, canRemove: true });
+  };
+
+  const closeEditor = () => setEditor(null);
 
   return (
     <View style={styles.section}>
@@ -80,7 +91,7 @@ export function ReminderSection({
           accessibilityRole="button"
           accessibilityLabel="Editar lembrete"
           disabled={disabled}
-          onPress={() => setEditorOpen(true)}
+          onPress={editReminder}
           style={({ pressed }) => [
             styles.summaryRow,
             {
@@ -120,15 +131,18 @@ export function ReminderSection({
         </Pressable>
       ) : null}
 
-      {editorOpen && reminder ? (
+      {editor ? (
         <ReminderEditorSheet
           visible
-          reminder={reminder}
-          onChange={(next) => {
+          initialReminder={editor.initial}
+          canRemove={editor.canRemove}
+          onConfirm={(next) => {
             onChange(next);
-            if (next === null) setEditorOpen(false);
           }}
-          onClose={() => setEditorOpen(false)}
+          onRemove={() => {
+            onChange(null);
+          }}
+          onClose={closeEditor}
         />
       ) : null}
     </View>

@@ -20,7 +20,8 @@ export type ItemReminder =
   | { kind: "daily"; hour: number; minute: number }
   | {
       kind: "weekly";
-      weekday: ReminderWeekday;
+      /** Unique Expo weekdays 1–7, sorted ascending, length ≥ 1 */
+      weekdays: ReminderWeekday[];
       hour: number;
       minute: number;
     };

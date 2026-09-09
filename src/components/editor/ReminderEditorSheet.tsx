@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import {
   Gesture,
@@ -14,23 +14,34 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   applyReminderRepetition,
-  isReminderSchedulable,
+  formatReminderDateValue,
+  formatReminderTimeValue,
   repetitionLabel,
+  toggleReminderWeekday,
+  tryCommitReminder,
+  withReminderDate,
+  withReminderTime,
 } from "../../lib/reminderHelpers";
 import { font, fontSize, radius, spacing, touchTarget } from "../../lib/theme";
 import { useTheme } from "../../lib/themeContext";
-import type { ItemReminder, ReminderWeekday } from "../../types/item";
-import { ReminderMonthCalendar } from "./ReminderMonthCalendar";
-import { ReminderTimeScroller } from "./ReminderTimeScroller";
+import type { ItemReminder } from "../../types/item";
+import { ModalActionRow } from "../ui/ModalActionRow";
+import { ReminderDateTimePicker } from "./ReminderDateTimePicker";
+import { ReminderFieldRow } from "./ReminderFieldRow";
 import { ReminderWeekdayPicker } from "./ReminderWeekdayPicker";
 import { shouldDismissReminderEditor } from "./reminderEditorInteractions";
 
 export type ReminderEditorSheetProps = {
   visible: boolean;
-  reminder: ItemReminder;
-  onChange: (next: ItemReminder | null) => void;
+  initialReminder: ItemReminder;
+  /** When false (new reminder), hide Remover — discard via Cancelar. */
+  canRemove: boolean;
+  onConfirm: (next: ItemReminder) => void;
+  onRemove: () => void;
   onClose: () => void;
 };
+
+type ActivePicker = "date" | "time" | null;
 
 const REMINDER_KINDS = ["once", "daily", "weekly"] as const;
 const REPETITION_OPTIONS = REMINDER_KINDS.map((kind) => ({
@@ -38,62 +49,57 @@ const REPETITION_OPTIONS = REMINDER_KINDS.map((kind) => ({
   label: repetitionLabel(kind),
 }));
 
-function withDate(reminder: ItemReminder, date: Date): ItemReminder {
-  const hour =
-    reminder.kind === "once" ? reminder.at.getHours() : reminder.hour;
-  const minute =
-    reminder.kind === "once" ? reminder.at.getMinutes() : reminder.minute;
-
-  const at = new Date(date);
-  at.setHours(hour, minute, 0, 0);
-  return { kind: "once", at };
-}
-
-function withWeekday(
-  reminder: Extract<ItemReminder, { kind: "weekly" }>,
-  weekday: ReminderWeekday
-): ItemReminder {
-  return {
-    kind: "weekly",
-    weekday,
-    hour: reminder.hour,
-    minute: reminder.minute,
-  };
-}
-
-function withTime(
-  reminder: ItemReminder,
-  hour: number,
-  minute: number
-): ItemReminder {
-  if (reminder.kind === "once") {
-    const at = new Date(reminder.at);
-    at.setHours(hour, minute, 0, 0);
-    return { kind: "once", at };
-  }
-  return { ...reminder, hour, minute };
-}
-
 export function ReminderEditorSheet({
   visible,
-  reminder,
-  onChange,
+  initialReminder,
+  canRemove,
+  onConfirm,
+  onRemove,
   onClose,
 }: ReminderEditorSheetProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const [timeScrollerKey, setTimeScrollerKey] = useState(0);
+  const [draft, setDraft] = useState<ItemReminder>(initialReminder);
+  const [activePicker, setActivePicker] = useState<ActivePicker>(null);
   const translateY = useSharedValue(0);
-  const hour =
-    reminder.kind === "once" ? reminder.at.getHours() : reminder.hour;
-  const minute =
-    reminder.kind === "once" ? reminder.at.getMinutes() : reminder.minute;
 
-  const commit = (next: ItemReminder): boolean => {
-    if (next.kind === "once" && !isReminderSchedulable(next)) return false;
-    onChange(next);
+  useEffect(() => {
+    if (!visible) {
+      setActivePicker(null);
+      translateY.value = 0;
+      return;
+    }
+    setDraft(initialReminder);
+    setActivePicker(null);
+    // Snapshot draft only when the sheet opens, not on every parent render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
+  }, [visible, translateY]);
+
+  const hour = draft.kind === "once" ? draft.at.getHours() : draft.hour;
+  const minute = draft.kind === "once" ? draft.at.getMinutes() : draft.minute;
+  const timeValue = new Date();
+  timeValue.setHours(hour, minute, 0, 0);
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  const applyDraft = (next: ItemReminder): boolean => {
+    const accepted = tryCommitReminder(next);
+    if (!accepted) return false;
+    setDraft(accepted);
     return true;
   };
+
+  const handleConfirm = () => {
+    const accepted = tryCommitReminder(draft);
+    if (!accepted) return;
+    onConfirm(accepted);
+    onClose();
+  };
+
+  const togglePicker = (which: "date" | "time") => {
+    setActivePicker((current) => (current === which ? null : which));
+  };
+
   const dismissPan = Gesture.Pan()
     .activeOffsetY([-10, 10])
     .onUpdate((event) => {
@@ -149,40 +155,9 @@ export function ReminderEditorSheet({
               </View>
             </GestureDetector>
 
-            {reminder.kind === "once" ? (
-              <ReminderMonthCalendar
-                selected={reminder.at}
-                disablePastDays
-                onSelectDate={(date) => commit(withDate(reminder, date))}
-              />
-            ) : null}
-
-            {reminder.kind === "weekly" ? (
-              <ReminderWeekdayPicker
-                selected={reminder.weekday}
-                onSelect={(weekday) =>
-                  commit(withWeekday(reminder, weekday))
-                }
-              />
-            ) : null}
-
-            <ReminderTimeScroller
-              key={timeScrollerKey}
-              hour={hour}
-              minute={minute}
-              onChange={(nextHour, nextMinute) => {
-                const accepted = commit(
-                  withTime(reminder, nextHour, nextMinute)
-                );
-                if (!accepted) {
-                  setTimeScrollerKey((current) => current + 1);
-                }
-              }}
-            />
-
             <View style={styles.repetitionRow}>
               {REPETITION_OPTIONS.map((option) => {
-                const active = option.value === reminder.kind;
+                const active = option.value === draft.kind;
                 return (
                   <Pressable
                     key={option.value}
@@ -191,7 +166,11 @@ export function ReminderEditorSheet({
                     accessibilityState={{ selected: active }}
                     onPress={() => {
                       if (active) return;
-                      commit(applyReminderRepetition(reminder, option.value));
+                      const next = applyReminderRepetition(draft, option.value);
+                      if (option.value !== "once") {
+                        setActivePicker((p) => (p === "date" ? null : p));
+                      }
+                      applyDraft(next);
                     }}
                     style={({ pressed }) => [
                       styles.repetitionPill,
@@ -221,25 +200,77 @@ export function ReminderEditorSheet({
               })}
             </View>
 
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                onChange(null);
+            {draft.kind === "once" ? (
+              <ReminderFieldRow
+                label="Data"
+                value={formatReminderDateValue(draft.at)}
+                selected={activePicker === "date"}
+                onPress={() => togglePicker("date")}
+              />
+            ) : null}
+
+            {activePicker === "date" && draft.kind === "once" ? (
+              <ReminderDateTimePicker
+                mode="date"
+                value={draft.at}
+                visible
+                minimumDate={startOfToday}
+                onDismiss={() => setActivePicker(null)}
+                onChange={(selected) => {
+                  applyDraft(withReminderDate(draft, selected));
+                }}
+              />
+            ) : null}
+
+            {draft.kind === "weekly" ? (
+              <ReminderWeekdayPicker
+                selected={draft.weekdays}
+                onToggle={(weekday) =>
+                  applyDraft({
+                    kind: "weekly",
+                    weekdays: toggleReminderWeekday(draft.weekdays, weekday),
+                    hour,
+                    minute,
+                  })
+                }
+              />
+            ) : null}
+
+            <ReminderFieldRow
+              label="Hora"
+              value={formatReminderTimeValue(hour, minute)}
+              selected={activePicker === "time"}
+              onPress={() => togglePicker("time")}
+            />
+
+            {activePicker === "time" ? (
+              <ReminderDateTimePicker
+                mode="time"
+                value={timeValue}
+                visible
+                onDismiss={() => setActivePicker(null)}
+                onChange={(selected) => {
+                  applyDraft(
+                    withReminderTime(
+                      draft,
+                      selected.getHours(),
+                      selected.getMinutes()
+                    )
+                  );
+                }}
+              />
+            ) : null}
+
+            <ModalActionRow
+              cancelLabel={canRemove ? "Remover lembrete" : "Cancelar"}
+              cancelVariant={canRemove ? "danger" : "default"}
+              confirmLabel="Confirmar"
+              onCancel={() => {
+                if (canRemove) onRemove();
                 onClose();
               }}
-              style={({ pressed }) => [
-                styles.remove,
-                {
-                  backgroundColor: pressed
-                    ? colors.dangerSubtle
-                    : "transparent",
-                },
-              ]}
-            >
-              <Text style={[styles.removeText, { color: colors.danger }]}>
-                Remover lembrete
-              </Text>
-            </Pressable>
+              onConfirm={handleConfirm}
+            />
           </Animated.View>
         </View>
       </GestureHandlerRootView>
@@ -290,16 +321,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
   },
   repetitionText: {
-    fontFamily: font.medium,
-    fontSize: fontSize.body,
-  },
-  remove: {
-    minHeight: touchTarget,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: radius.md,
-  },
-  removeText: {
     fontFamily: font.medium,
     fontSize: fontSize.body,
   },

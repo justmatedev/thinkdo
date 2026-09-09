@@ -91,25 +91,20 @@ describe("scheduleItemReminder", () => {
     expect(mockSchedule).not.toHaveBeenCalled();
   });
 
-  it("schedules a daily reminder when permission is granted", async () => {
+  it("schedules one weekly notification per selected weekday", async () => {
     await scheduleItemReminder(
       item({
         id: "a",
-        title: "Café",
-        body: "Moer",
-        reminder: { kind: "daily", hour: 9, minute: 30 },
+        reminder: { kind: "weekly", weekdays: [2, 4], hour: 9, minute: 0 },
       })
     );
     expect(mockSchedule).toHaveBeenCalledWith(
-      expect.objectContaining({
-        identifier: "reminder:a",
-        content: expect.objectContaining({
-          title: "Café",
-          body: "Moer",
-          data: { itemId: "a" },
-        }),
-      })
+      expect.objectContaining({ identifier: "reminder:a:w2" })
     );
+    expect(mockSchedule).toHaveBeenCalledWith(
+      expect.objectContaining({ identifier: "reminder:a:w4" })
+    );
+    expect(mockSchedule).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -126,6 +121,7 @@ describe("reconcileReminders", () => {
   it("cancels orphan reminder ids and leaves unrelated notifications", async () => {
     mockGetAll.mockResolvedValue([
       { identifier: "reminder:gone" },
+      { identifier: "reminder:gone:w2" },
       { identifier: "reminder:live" },
       { identifier: "other:x" },
     ]);
@@ -138,6 +134,7 @@ describe("reconcileReminders", () => {
     ]);
 
     expect(mockCancel).toHaveBeenCalledWith("reminder:gone");
+    expect(mockCancel).toHaveBeenCalledWith("reminder:gone:w2");
     expect(mockCancel).not.toHaveBeenCalledWith("other:x");
     expect(mockSchedule).toHaveBeenCalledWith(
       expect.objectContaining({ identifier: "reminder:live" })

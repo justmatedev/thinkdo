@@ -1,11 +1,14 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import {
-  buildReminderTrigger,
+  buildReminderTriggers,
   isReminderNotificationId,
   isReminderSchedulable,
+  itemIdFromReminderNotificationId,
   notificationContent,
   reminderNotificationId,
+  reminderNotificationIdsForItem,
+  reminderWeekdayNotificationId,
   type ReminderTrigger,
 } from "../lib/reminderHelpers";
 import type { Item } from "../types/item";
@@ -37,6 +40,16 @@ function toExpoTrigger(
     minute: shape.minute,
     channelId: CHANNEL_ID,
   };
+}
+
+function identifierForTrigger(
+  itemId: string,
+  trigger: ReminderTrigger
+): string {
+  if (trigger.type === "weekly") {
+    return reminderWeekdayNotificationId(itemId, trigger.weekday);
+  }
+  return reminderNotificationId(itemId);
 }
 
 export function configureForegroundNotificationHandler(): void {
@@ -76,13 +89,15 @@ export async function requestReminderPermissions(): Promise<boolean> {
 
 export async function cancelItemReminder(itemId: string): Promise<void> {
   if (Platform.OS === "web") return;
-  try {
-    await Notifications.cancelScheduledNotificationAsync(
-      reminderNotificationId(itemId)
-    );
-  } catch {
-    // No scheduled notification for this id — ignore
-  }
+  await Promise.all(
+    reminderNotificationIdsForItem(itemId).map(async (id) => {
+      try {
+        await Notifications.cancelScheduledNotificationAsync(id);
+      } catch {
+        // No scheduled notification for this id — ignore
+      }
+    })
+  );
 }
 
 export async function scheduleItemReminder(item: Item): Promise<void> {
@@ -97,18 +112,23 @@ export async function scheduleItemReminder(item: Item): Promise<void> {
     return;
   }
   await ensureReminderChannel();
+  await cancelItemReminder(item.id);
   const content = notificationContent(item);
-  const trigger = toExpoTrigger(buildReminderTrigger(item.reminder));
-  await Notifications.scheduleNotificationAsync({
-    identifier: reminderNotificationId(item.id),
-    content: {
-      title: content.title,
-      body: content.body,
-      data: { itemId: item.id },
-      sound: true,
-    },
-    trigger,
-  });
+  const triggers = buildReminderTriggers(item.reminder);
+  await Promise.all(
+    triggers.map((trigger) =>
+      Notifications.scheduleNotificationAsync({
+        identifier: identifierForTrigger(item.id, trigger),
+        content: {
+          title: content.title,
+          body: content.body,
+          data: { itemId: item.id },
+          sound: true,
+        },
+        trigger: toExpoTrigger(trigger),
+      })
+    )
+  );
 }
 
 export async function reconcileReminders(items: Item[]): Promise<void> {
@@ -121,8 +141,8 @@ export async function reconcileReminders(items: Item[]): Promise<void> {
   for (const n of scheduled) {
     const id = n.identifier;
     if (!isReminderNotificationId(id)) continue;
-    const itemId = id.slice("reminder:".length);
-    if (!living.has(itemId)) {
+    const itemId = itemIdFromReminderNotificationId(id);
+    if (!itemId || !living.has(itemId)) {
       await Notifications.cancelScheduledNotificationAsync(id);
     }
   }
