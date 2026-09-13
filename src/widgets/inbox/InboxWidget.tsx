@@ -163,11 +163,38 @@ export function InboxWidget({
                 </FlexWidget>
               ) : (
                 <FlexWidget
+                  clickAction="OPEN_URI"
+                  clickActionData={{ uri: inboxItemDeepLink(row.id) }}
                   style={{
                     width: LEAD_SLOT,
                     height: INBOX_WIDGET_ROW_HEIGHT,
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
-                />
+                  accessibilityLabel={`Abrir ${row.title || "nota"}`}
+                >
+                  <FlexWidget
+                    style={{
+                      width: CHECK_SIZE,
+                      height: CHECK_SIZE,
+                      borderRadius: 6,
+                      borderWidth: 2,
+                      borderColor: palette.accent,
+                      backgroundColor: palette.background,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <TextWidget
+                      text="≡"
+                      style={{
+                        color: palette.accent,
+                        fontSize: 13,
+                        fontWeight: "700",
+                      }}
+                    />
+                  </FlexWidget>
+                </FlexWidget>
               )}
               <FlexWidget
                 clickAction="OPEN_URI"
