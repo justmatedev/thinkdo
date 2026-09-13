@@ -217,6 +217,7 @@ function InboxWidgetConfigBody({
         themeName={previewThemeName}
         filter={filter}
         snapshot={snapshot}
+        scrollable={false}
       />
     ),
     [previewThemeName, filter, snapshot]
