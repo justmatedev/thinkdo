@@ -2,6 +2,7 @@
 
 import {
   FlexWidget,
+  ListWidget,
   TextWidget,
 } from "react-native-android-widget";
 import type { ThemeName } from "../../lib/theme";
@@ -17,11 +18,15 @@ import {
   inboxItemDeepLink,
 } from "./inboxWidgetActions";
 import { inboxFilterLabel } from "./inboxWidgetFilter";
+import {
+  INBOX_WIDGET_ROW_HEIGHT,
+  INBOX_WIDGET_VERTICAL_CHROME,
+  selectInboxWidgetRows,
+} from "./inboxWidgetRows";
 
 /** Matches inbox ItemRow lead column so note/task titles share one vertical edge. */
 const LEAD_SLOT = 36;
 const CHECK_SIZE = 22;
-const ROW_HEIGHT = 44;
 
 type Props = {
   width: number;
@@ -29,26 +34,32 @@ type Props = {
   themeName: ThemeName;
   filter: InboxFilter;
   snapshot: InboxSnapshot;
+  /** Home widget: true (default). Config preview: false (avoids ListWidget crash). */
+  scrollable?: boolean;
 };
 
-/**
- * Prefer static FlexWidget rows over ListWidget.
- * ListWidget (AdapterView) has crashed WidgetPreview / config activities in release builds.
- */
+/** Config preview must pass `scrollable={false}` — ListWidget crashes WidgetPreview. */
 export function InboxWidget({
   width,
   height,
   themeName,
   filter,
   snapshot,
+  scrollable = true,
 }: Props) {
   "use no memo";
   const palette = captureWidgetPalette(themeName);
   const rows = filterInboxSnapshotRows(snapshot.items, filter);
   const sidePadding = width < 220 ? 10 : 14;
-  const listHeight = Math.max(ROW_HEIGHT, height - 16);
-  const maxRows = Math.max(1, Math.floor(listHeight / ROW_HEIGHT));
-  const visible = rows.slice(0, maxRows);
+  const listHeight = Math.max(
+    INBOX_WIDGET_ROW_HEIGHT,
+    height - INBOX_WIDGET_VERTICAL_CHROME
+  );
+  const visible = selectInboxWidgetRows(rows, {
+    scrollable,
+    widgetHeight: height,
+  });
+  const ListContainer = scrollable ? ListWidget : FlexWidget;
 
   return (
     <FlexWidget
@@ -89,11 +100,11 @@ export function InboxWidget({
           />
         </FlexWidget>
       ) : (
-        <FlexWidget
+        <ListContainer
           style={{
             width: "match_parent",
             height: listHeight,
-            flexDirection: "column",
+            ...(scrollable ? {} : { flexDirection: "column" as const }),
           }}
         >
           {visible.map((row, index) => (
@@ -101,7 +112,7 @@ export function InboxWidget({
               key={row.id}
               style={{
                 width: "match_parent",
-                height: ROW_HEIGHT,
+                height: INBOX_WIDGET_ROW_HEIGHT,
                 flexDirection: "row",
                 alignItems: "center",
                 borderTopColor: palette.border,
@@ -114,7 +125,7 @@ export function InboxWidget({
                   clickActionData={{ itemId: row.id, done: !row.done }}
                   style={{
                     width: LEAD_SLOT,
-                    height: ROW_HEIGHT,
+                    height: INBOX_WIDGET_ROW_HEIGHT,
                     alignItems: "center",
                     justifyContent: "center",
                   }}
@@ -154,7 +165,7 @@ export function InboxWidget({
                 <FlexWidget
                   style={{
                     width: LEAD_SLOT,
-                    height: ROW_HEIGHT,
+                    height: INBOX_WIDGET_ROW_HEIGHT,
                   }}
                 />
               )}
@@ -162,7 +173,7 @@ export function InboxWidget({
                 clickAction="OPEN_URI"
                 clickActionData={{ uri: inboxItemDeepLink(row.id) }}
                 style={{
-                  height: ROW_HEIGHT,
+                  height: INBOX_WIDGET_ROW_HEIGHT,
                   flex: 1,
                   justifyContent: "center",
                   paddingRight: 6,
@@ -182,7 +193,7 @@ export function InboxWidget({
               </FlexWidget>
             </FlexWidget>
           ))}
-        </FlexWidget>
+        </ListContainer>
       )}
     </FlexWidget>
   );
