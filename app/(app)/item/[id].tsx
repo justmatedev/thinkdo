@@ -2,7 +2,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -224,9 +223,10 @@ export default function EditorScreen() {
 
       {!online ? <OfflineBanner /> : null}
 
+      {/* Edge-to-edge Android no longer resizes the window for the IME. */}
       <KeyboardAvoidingView
         style={[styles.flex, styles.padded]}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior="padding"
         keyboardVerticalOffset={spacing.md}
       >
         <ScrollView

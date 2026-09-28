@@ -115,10 +115,8 @@ export function AuthScreenShell({
   return (
     <AuthScrollContext.Provider value={{ scrollFieldIntoView }}>
       <View style={[styles.screen, { backgroundColor: heroBackground }]}>
-        <KeyboardAvoidingView
-          style={styles.flex}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-        >
+        {/* Edge-to-edge Android no longer resizes the window for the IME. */}
+        <KeyboardAvoidingView style={styles.flex} behavior="padding">
           <SafeAreaView
             edges={["top", "left", "right"]}
             style={[styles.hero, keyboardVisible && styles.heroCompact]}
@@ -172,9 +170,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   heroCompact: {
-    flexGrow: 0,
     flexShrink: 0,
-    minHeight: undefined,
+    minHeight: 0,
     paddingVertical: spacing.sm,
   },
   tagline: {
