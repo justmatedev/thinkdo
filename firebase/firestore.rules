@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId}/items/{itemId} {
+      function isOwner() {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      function validItemFields(d) {
+        return d.keys().hasAll([
+            'type', 'title', 'body', 'done', 'sortOrder', 'createdAt', 'updatedAt'
+          ])
+          && d.keys().hasOnly([
+            'type', 'title', 'body', 'done', 'sortOrder', 'createdAt', 'updatedAt',
+            'color', 'reminder'
+          ]);
+      }
+
+      function validTitle(title) {
+        return title is string && title.size() > 0 && title.size() <= 500;
+      }
+
+      function validBody(body) {
+        return body is string && body.size() <= 100000;
+      }
+
+      function validColor(d) {
+        return !('color' in d)
+          || d.color == null
+          || d.color in ['yellow', 'orange', 'red', 'pink', 'purple', 'blue', 'green', 'gray'];
+      }
+
+      function validHourMinute(r) {
+        return r.hour is int && r.hour >= 0 && r.hour <= 23
+          && r.minute is int && r.minute >= 0 && r.minute <= 59;
+      }
+
+      function validWeekdays(days) {
+        return days is list
+          && days.size() > 0 && days.size() <= 7
+          && days.toSet().size() == days.size()
+          && days.toSet().hasOnly([1, 2, 3, 4, 5, 6, 7]);
+      }
+
+      function validOnceReminder(r) {
+        return r.keys().hasOnly(['kind', 'at'])
+          && r.kind == 'once'
+          && r.at is timestamp;
+      }
+
+      function validDailyReminder(r) {
+        return r.keys().hasOnly(['kind', 'hour', 'minute'])
+          && r.kind == 'daily'
+          && validHourMinute(r);
+      }
+
+      function validWeeklyReminder(r) {
+        return r.keys().hasOnly(['kind', 'weekdays', 'hour', 'minute'])
+          && r.kind == 'weekly'
+          && validWeekdays(r.weekdays)
+          && validHourMinute(r);
+      }
+
+      function validReminder(d) {
+        return !('reminder' in d)
+          || d.reminder == null
+          || (d.reminder is map && (
+            validOnceReminder(d.reminder)
+            || validDailyReminder(d.reminder)
+            || validWeeklyReminder(d.reminder)
+          ));
+      }
+
+      function validItem(d) {
+        return validItemFields(d)
+          && d.type in ['note', 'task']
+          && validTitle(d.title)
+          && validBody(d.body)
+          && d.done is bool
+          && d.sortOrder is number
+          && d.createdAt is timestamp
+          && d.updatedAt is timestamp
+          && validColor(d)
+          && validReminder(d);
+      }
+
+      allow read, delete: if isOwner();
+      allow create: if isOwner() && validItem(request.resource.data);
+      allow update: if isOwner()
+        && validItem(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+  }
+}

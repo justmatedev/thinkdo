@@ -1,0 +1,128 @@
+{
+  "expo": {
+    "name": "Thinkdo",
+    "slug": "Thinkdo",
+    "version": "1.2.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "thinkdo",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "icon": "./assets/images/icon.png",
+      "bundleIdentifier": "com.justmate.thinkdo"
+    },
+    "android": {
+      "package": "com.justmate.thinkdo",
+      "adaptiveIcon": {
+        "backgroundColor": "#8B5CF6",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "./plugins/withGradleJavaHome.js",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#8B5CF6",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 120
+        }
+      ],
+      "expo-font",
+      "@react-native-google-signin/google-signin",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#8B5CF6",
+          "defaultChannel": "reminders",
+          "enableBackgroundRemoteNotifications": false
+        }
+      ],
+      [
+        "@react-native-community/datetimepicker",
+        {
+          "android": {
+            "datePicker": {
+              "colorAccent": {
+                "light": "#8B5CF6",
+                "dark": "#A78BFA"
+              },
+              "colorControlActivated": {
+                "light": "#8B5CF6",
+                "dark": "#A78BFA"
+              }
+            },
+            "timePicker": {
+              "headerBackground": {
+                "light": "#8B5CF6",
+                "dark": "#A78BFA"
+              },
+              "numbersSelectorColor": {
+                "light": "#8B5CF6",
+                "dark": "#A78BFA"
+              }
+            }
+          }
+        }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "Capture",
+              "label": "Thinkdo Anotar",
+              "description": "Captura rápida",
+              "minWidth": "40dp",
+              "minHeight": "40dp",
+              "targetCellWidth": 1,
+              "targetCellHeight": 1,
+              "maxResizeWidth": "280dp",
+              "maxResizeHeight": "460dp",
+              "resizeMode": "horizontal|vertical",
+              "previewImage": "./assets/images/widget-capture-preview.png",
+              "updatePeriodMillis": 0,
+              "widgetFeatures": "reconfigurable"
+            },
+            {
+              "name": "Inbox",
+              "label": "Thinkdo Inbox",
+              "description": "Lista da inbox",
+              "minWidth": "180dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 5,
+              "targetCellHeight": 2,
+              "maxResizeWidth": "560dp",
+              "maxResizeHeight": "460dp",
+              "resizeMode": "horizontal|vertical",
+              "previewImage": "./assets/images/widget-inbox-preview.png",
+              "updatePeriodMillis": 0,
+              "widgetFeatures": "reconfigurable"
+            }
+          ]
+        }
+      ],
+      "./plugins/withAndroidPickerThemes.js",
+      "./plugins/withWidgetDarkPreviews.js"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d8ef4c5a-53c1-4eb3-9676-c6c6655383e1"
+      }
+    },
+    "owner": "justmate"
+  }
+}
