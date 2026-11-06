@@ -1,7 +1,8 @@
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import {
   ITEM_COLORS,
   itemColorLabel,
+  itemColorCheck,
   itemColorSwatch,
 } from "@/lib/itemColors";
 import { touchTarget } from "@/lib/theme";
@@ -31,7 +32,9 @@ export function ColorSwatchRow({
   const noneSelected = value === null;
 
   return (
-    <View style={[styles.row, { opacity: disabled ? 0.4 : 1 }]}>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false}
+      style={{ height: touchTarget, flexGrow: 0, opacity: disabled ? 0.4 : 1 }}
+      contentContainerStyle={styles.row} keyboardShouldPersistTaps="handled">
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Sem cor"
@@ -78,11 +81,15 @@ export function ColorSwatchRow({
                   borderColor: selected ? ring : "transparent",
                 },
               ]}
-            />
+            >
+              {selected ? <View accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                <AppIcon name="check" size={12} color={itemColorCheck(key, themeName)} />
+              </View> : null}
+            </View>
           </Pressable>
         );
       })}
-    </View>
+    </ScrollView>
   );
 }
 
@@ -94,8 +101,9 @@ const styles = StyleSheet.create({
     minHeight: touchTarget,
   },
   hit: {
-    flex: 1,
-    minHeight: touchTarget,
+    width: touchTarget,
+    height: touchTarget,
+    flexShrink: 0,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -103,6 +111,8 @@ const styles = StyleSheet.create({
     width: SWATCH_SIZE,
     height: SWATCH_SIZE,
     borderRadius: SWATCH_SIZE / 2,
+    alignItems: "center",
+    justifyContent: "center",
   },
   noneSwatch: {
     borderWidth: RING,
