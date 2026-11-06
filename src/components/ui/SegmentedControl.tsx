@@ -73,6 +73,8 @@ export function SegmentedControl<T extends string>({
                 fontFamily: active ? font.medium : font.regular,
                 fontSize: fontSize.meta,
                 color: tone,
+                flexShrink: 1,
+                textAlign: "center",
               }}
             >
               {opt.label}

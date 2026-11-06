@@ -5,6 +5,7 @@ import { useTheme } from "@/lib/themeContext";
 
 type Props = {
   label: string;
+  leading?: ReactNode;
   trailing?: ReactNode;
   onPress?: () => void;
   danger?: boolean;
@@ -13,6 +14,7 @@ type Props = {
 
 export function SettingsRow({
   label,
+  leading,
   trailing,
   onPress,
   danger,
@@ -22,6 +24,7 @@ export function SettingsRow({
   const labelColor = danger ? colors.danger : colors.textPrimary;
   const content = (
     <View style={styles.row}>
+      {leading}
       <Text
         style={{
           fontFamily: font.regular,
