@@ -41,4 +41,4 @@ export type UpdateItemInput = Partial<
   Pick<Item, "type" | "title" | "body" | "done" | "color" | "reminder">
 >;
 
-export type SaveStatus = "saved" | "saving" | "error";
+export type SaveStatus = "saved" | "saving" | "draft" | "error";

@@ -6,13 +6,14 @@ import type { SaveStatus } from "@/types/item";
 const LABELS: Record<SaveStatus, string> = {
   saved: "Salvo",
   saving: "Salvando…",
+  draft: "Rascunho neste aparelho",
   error: "Não salvo",
 };
 
 export function SaveIndicator({ status }: { status: SaveStatus }) {
   const { colors } = useTheme();
   const color =
-    status === "error"
+    status === "error" || status === "draft"
       ? colors.warning
       : status === "saving"
         ? colors.textSecondary

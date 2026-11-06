@@ -22,9 +22,10 @@ function token(uid) {
   const encode = (v) => Buffer.from(JSON.stringify(v)).toString("base64url");
   return `${encode({ alg: "none", typ: "JWT" })}.${encode({ sub: uid, user_id: uid, aud: project, iss: `https://securetoken.google.com/${project}`, iat: now, exp: now + 3600, firebase: { sign_in_provider: "custom", identities: {} } })}.`;
 }
+const runId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 let counter = 0;
 async function write(reminder, uid = "owner", overrides = {}) {
-  return fetch(`${base}/users/owner/items/test-${++counter}`, {
+  return fetch(`${base}/users/owner/items/test-${runId}-${++counter}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -170,3 +171,21 @@ test("allows preserving createdAt and rejects its removal", async () => {
   const removed = await patchItem(name, {}, ["createdAt"]);
   assert.equal(removed.status, 403, await removed.text());
 });
+
+for (const [label, patch, status] of [
+  ['accented title at limit', { title: 'é'.repeat(500) }, 200],
+  ['accented title over limit', { title: 'é'.repeat(501) }, 403],
+  ['emoji title at limit', { title: '😀'.repeat(250) }, 200],
+  ['emoji title over limit', { title: '😀'.repeat(251) }, 403],
+  ['emoji body at limit', { body: '😀'.repeat(50000) }, 200],
+  ['emoji body over limit', { body: '😀'.repeat(50001) }, 403],
+]) {
+  test(`Unicode validation: ${label}`, async () => {
+    const created = await write(null, 'owner', patch);
+    assert.equal(created.status, status, await created.text());
+    const item = await write(null);
+    const { name } = await item.json();
+    const updated = await patchItem(name, patch);
+    assert.equal(updated.status, status, await updated.text());
+  });
+}

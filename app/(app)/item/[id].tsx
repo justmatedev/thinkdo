@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
+  BackHandler,
   KeyboardAvoidingView,
   Pressable,
   ScrollView,
@@ -13,6 +14,7 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
+import { EditorRecoveryDialog } from "@/components/editor/EditorRecoveryDialog";
 import { EditorHeader } from "@/components/editor/EditorHeader";
 import { EditorLoadingSkeleton } from "@/components/editor/EditorLoadingSkeleton";
 import { DeleteItemsDialog } from "@/components/items/DeleteItemsDialog";
@@ -56,6 +58,17 @@ export default function EditorScreen() {
     notFound,
     status,
     permissionDenied,
+    localPersistence,
+    fieldErrors,
+    titleHint,
+    recoveryDraft,
+    recoveryConflicts,
+    missing,
+    deleting,
+    deleteError,
+    finishTitleEditing,
+    recoverDraft,
+    discardDraft,
     loadError,
     retryLoad,
     retrySave,
@@ -66,7 +79,9 @@ export default function EditorScreen() {
     id ?? ""
   );
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [deleteRequested, setDeleteRequested] = useState(false);
+  const editable = online && !deleting && !deleteRequested && !recoveryDraft;
+  const displayStatus = !online && localPersistence === "saved" && status !== "saved" ? "draft" : status;
   const collapseSheetRef = useRef<(() => void) | null>(null);
 
   const sheetPeek = EDITOR_SHEET_COLLAPSED_CONTENT + insets.bottom + spacing.md;
@@ -100,23 +115,38 @@ export default function EditorScreen() {
   };
 
   const handleConfirmDelete = async () => {
-    if (deleting) return;
-    setDeleting(true);
+    if (deleting || deleteRequested) return;
+    setDeleteRequested(true);
     try {
       await remove();
       setConfirmOpen(false);
       router.back();
     } catch {
-      setDeleting(false);
+      setDeleteRequested(false);
     }
   };
 
   const handleCloseConfirm = () => {
-    if (deleting) return;
+    if (deleting || deleteRequested) return;
     setConfirmOpen(false);
   };
 
+  useEffect(() => {
+    if (!deleting && !deleteRequested) return;
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => true);
+    return () => subscription.remove();
+  }, [deleting, deleteRequested]);
+
+  const recovery = recoveryDraft ? <EditorRecoveryDialog draft={recoveryDraft}
+    missing={missing} hasConflicts={recoveryConflicts.length > 0}
+    storageError={localPersistence === "error"} onRecover={recoverDraft}
+    onDiscard={discardDraft} onClose={() => router.back()} /> : null;
+
   if (notFound) return null;
+  if (missing) return <SafeAreaView style={[styles.screen, styles.padded, { backgroundColor: colors.background }]}>
+    <EditorHeader backColor={backColor} deleteDisabled onBack={() => router.back()} />
+    {recovery}
+  </SafeAreaView>;
 
   if (loadError && !item) {
     return (
@@ -177,20 +207,22 @@ export default function EditorScreen() {
     >
       <EditorHeader
         backColor={backColor}
-        status={status}
-        deleteDisabled={!online}
+        status={displayStatus}
+        deleteDisabled={!editable}
+        backDisabled={deleting || deleteRequested}
         onBack={() => router.back()}
         onDelete={handleDelete}
       />
 
       {!online ? <OfflineBanner /> : null}
-      {status === "error" ? (
+      {(status === "error" || status === "draft" || localPersistence === "error") && !recoveryDraft ? (
         <Pressable
           accessibilityRole="button"
+          disabled={!online || deleting || deleteRequested || Object.keys(fieldErrors).length > 0}
           onPress={() => void retrySave()}
           style={styles.padded}
         >
-          <Text style={{ color: colors.warning }}>Não foi possível salvar. Tentar novamente</Text>
+          <Text style={{ color: colors.warning }}>{localPersistence === "error" ? "Não foi possível guardar o rascunho neste aparelho. Tentar novamente" : status === "draft" ? "Alterações guardadas neste aparelho. Tentar enviar novamente" : "Não foi possível salvar. Tentar novamente"}</Text>
         </Pressable>
       ) : null}
 
@@ -211,19 +243,19 @@ export default function EditorScreen() {
               <Pressable
                 accessibilityRole="checkbox"
                 accessibilityLabel="Feito"
-                accessibilityState={{ checked: item.done, disabled: !online }}
+                accessibilityState={{ checked: item.done, disabled: !editable }}
                 onPress={() => {
                   collapseSheet();
                   update({ done: !item.done });
                 }}
-                disabled={!online}
+                disabled={!editable}
                 hitSlop={spacing.sm}
                 style={[
                   styles.titleCheck,
                   {
                     borderColor: checkAccent,
                     backgroundColor: item.done ? checkAccent : checkEmpty,
-                    opacity: online ? 1 : 0.4,
+                    opacity: editable ? 1 : 0.4,
                   },
                 ]}
               >
@@ -233,10 +265,12 @@ export default function EditorScreen() {
               </Pressable>
             ) : null}
             <TextInput
+              accessibilityLabel="Título"
               value={item.title}
+              onBlur={finishTitleEditing}
               onChangeText={(title) => update({ title })}
               onFocus={collapseSheet}
-              editable={online}
+              editable={editable}
               placeholder="Título"
               placeholderTextColor={mutedText}
               style={[
@@ -251,12 +285,15 @@ export default function EditorScreen() {
               ]}
             />
           </View>
+          {fieldErrors.title ? <Text accessibilityRole="alert" style={{ color: colors.warning }}>{fieldErrors.title}</Text> : null}
+          {titleHint ? <Text accessibilityLiveRegion="polite" style={{ color: mutedText }}>{titleHint}</Text> : null}
 
           <TextInput
+            accessibilityLabel={isTask ? "Detalhes da tarefa" : "Texto da anotação"}
             value={item.body}
             onChangeText={(body) => update({ body })}
             onFocus={collapseSheet}
-            editable={online}
+            editable={editable}
             placeholder={
               isTask ? "Detalhes da tarefa (opcional)…" : "Anote algo…"
             }
@@ -273,12 +310,13 @@ export default function EditorScreen() {
               },
             ]}
           />
+          {fieldErrors.body ? <Text accessibilityRole="alert" style={{ color: colors.warning }}>{fieldErrors.body}</Text> : null}
         </ScrollView>
       </KeyboardAvoidingView>
 
       <EditorOptionsSheet
         collapseRef={collapseSheetRef}
-        online={online}
+        online={editable}
         isTask={isTask}
         color={item.color}
         reminder={item.reminder}
@@ -292,10 +330,12 @@ export default function EditorScreen() {
       <DeleteItemsDialog
         visible={confirmOpen}
         title={item.type === "note" ? "Excluir esta anotação?" : "Excluir esta tarefa?"}
-        busy={deleting}
+        busy={deleting || deleteRequested}
+        error={deleteError}
         onClose={handleCloseConfirm}
         onConfirm={handleConfirmDelete}
       />
+      {recovery}
     </SafeAreaView>
   );
 }

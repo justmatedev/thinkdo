@@ -60,6 +60,17 @@ O Thinkdo é um projeto pessoal em uso diário, com foco em **Android**. Este re
 
 O app usa uma conta para sincronizar os dados. Sem conexão, a escrita fica pausada e o app exibe um aviso; a edição offline ainda não faz parte do escopo atual. Os lembretes são agendados no aparelho em que você usa o app. Concluir uma tarefa pausa seus lembretes sem apagar a configuração; reabrir retoma os próximos horários válidos, sem disparar lembretes únicos vencidos.
 
+
+### Recuperação de alterações no editor
+
+Antes de enviar alterações à nuvem, o editor guarda um rascunho local separado por conta e item. Se o envio falhar ao voltar ou colocar o app em segundo plano, o texto permanece neste aparelho. Ao reabrir, escolha **Recuperar** ou **Descartar**; nenhuma alteração recuperada é enviada antes dessa escolha. Se os mesmos campos mudaram na nuvem, o app avisa que recuperar substituirá seus valores atuais.
+
+O indicador **Salvo** confirma o envio à nuvem; **Rascunho neste aparelho** indica alterações locais. Falhas no armazenamento local têm aviso próprio. Rascunhos são preservados ao sair da conta e reaparecem somente no login da mesma conta. Se o item foi excluído, o texto recuperável fica disponível para selecionar e copiar, sem recriar o item.
+
+O título aceita até 500 posições e o corpo até 100.000, conforme as regras atuais do banco (unidades UTF-16; alguns emojis ocupam duas posições). Texto acima do limite é preservado no rascunho, sem truncamento, e precisa ser corrigido para enviar. Ao sair de um título vazio, o último título válido é restaurado com um aviso.
+
+A edição continua bloqueada sem internet. Rascunhos não substituem backup: desinstalar ou limpar os dados do app os remove, e encerrar o processo antes da gravação local terminar pode perder as últimas alterações.
+
 ---
 
 ## Decisões técnicas

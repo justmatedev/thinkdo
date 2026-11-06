@@ -9,6 +9,7 @@ type Props = {
   backColor: string;
   status?: SaveStatus;
   deleteDisabled: boolean;
+  backDisabled?: boolean;
   onBack: () => void;
   onDelete?: () => void;
 };
@@ -17,6 +18,7 @@ export function EditorHeader({
   backColor,
   status,
   deleteDisabled,
+  backDisabled = false,
   onBack,
   onDelete,
 }: Props) {
@@ -27,6 +29,7 @@ export function EditorHeader({
         accessibilityRole="button"
         accessibilityLabel="Voltar"
         onPress={onBack}
+        disabled={backDisabled}
         hitSlop={spacing.sm}
         style={styles.action}
       >
