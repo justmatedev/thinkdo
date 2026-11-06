@@ -24,7 +24,8 @@ beforeEach(() => {
   mockBack.mockClear(); mockFinishTitle.mockClear();
   mockState = { item: { id: 'a', type: 'task', title: 'Title', body: 'Body', done: true, color: null, reminder: { kind: 'daily', hour: 9, minute: 0 } },
     status: 'saved', localPersistence: 'idle', fieldErrors: {}, recoveryConflicts: [], recoveryDraft: null, deleting: false,
-    update: jest.fn(), convert: jest.fn(), remove: jest.fn(), retrySave: jest.fn(), finishTitleEditing: mockFinishTitle, recoverDraft: jest.fn(), discardDraft: jest.fn() };
+    update: jest.fn(), convert: jest.fn(), remove: jest.fn(), retrySave: jest.fn(), finishTitleEditing: mockFinishTitle, recoverDraft: jest.fn(), discardDraft: jest.fn(),
+    canUndo: true, canRedo: true, undoText: jest.fn(), redoText: jest.fn(), finishTextGroup: jest.fn() };
 });
 afterEach(() => { if (tree) act(() => tree.unmount()); });
 function render() { act(() => { tree = create(createElement(EditorScreen)); }); }
@@ -73,4 +74,45 @@ test('reserves space below editor text for the measured enlarged options header'
   act(() => tree.root.findByType(EditorOptionsSheet).props.onCollapsedHeightChange(120));
   const scroll = tree.root.findByType(ScrollView);
   expect(StyleSheet.flatten(scroll.props.contentContainerStyle).paddingBottom).toBe(136);
+});
+
+function action(label: string) {
+  return tree.root.findAllByProps({ accessibilityLabel: label })[0];
+}
+
+test.each(['note', 'task'])('exposes accessible text history actions while saving a %s', type => {
+  mockState.item = { ...(mockState.item as object), type };
+  mockState.status = 'saving';
+  render();
+  expect(action('Desfazer').props.disabled).toBe(false);
+  expect(action('Refazer').props.accessibilityState).toEqual({ disabled: false });
+  act(() => action('Desfazer').props.onPress());
+  act(() => action('Refazer').props.onPress());
+  expect(mockState.undoText).toHaveBeenCalledTimes(1);
+  expect(mockState.redoText).toHaveBeenCalledTimes(1);
+  expect(tree.root.findByType(SaveIndicator).props.status).toBe('saving');
+});
+
+test.each(['offline', 'recovery', 'deleting', 'empty', 'loading'])('disables history actions when %s', condition => {
+  if (condition === 'offline') mockOnline = false;
+  if (condition === 'deleting') mockState.deleting = true;
+  if (condition === 'empty') { mockState.canUndo = false; mockState.canRedo = false; }
+  if (condition === 'loading') mockState.item = null;
+  if (condition === 'recovery') mockState.recoveryDraft = { patch: { body: 'Local' }, original: { body: 'Old' } };
+  render();
+  for (const label of ['Desfazer', 'Refazer']) {
+    expect(action(label).props.disabled).toBe(true);
+    expect(action(label).props.accessibilityState).toEqual({ disabled: true });
+  }
+});
+
+test('closes text groups on focus and blur and still finalizes the title', () => {
+  render();
+  const [title, body] = tree.root.findAllByType(TextInput);
+  act(() => title.props.onFocus());
+  act(() => title.props.onBlur());
+  act(() => body.props.onFocus());
+  act(() => body.props.onBlur());
+  expect(mockState.finishTextGroup).toHaveBeenCalledTimes(4);
+  expect(mockFinishTitle).toHaveBeenCalledTimes(1);
 });

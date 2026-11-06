@@ -24,6 +24,8 @@ import { EDITOR_SHEET_COLLAPSED_CONTENT } from "@/components/editor/editorSheetS
 import { AppIcon } from "@/components/ui/AppIcon";
 import { useItemEditor } from "@/hooks/useItemEditor";
 import { useOnline } from "@/hooks/useOnline";
+import { createEditorTextSelection } from "@/features/editor/editorTextSelection";
+import type { TextField } from "@/features/editor/editorTextHistory";
 import {
   itemColorMuted,
   itemColorSheet,
@@ -75,6 +77,11 @@ export default function EditorScreen() {
     update,
     convert,
     remove,
+    canUndo,
+    canRedo,
+    undoText,
+    redoText,
+    finishTextGroup,
   } = useItemEditor(
     id ?? ""
   );
@@ -83,6 +90,10 @@ export default function EditorScreen() {
   const editable = online && !deleting && !deleteRequested && !recoveryDraft;
   const displayStatus = !online && localPersistence === "saved" && status !== "saved" ? "draft" : status;
   const collapseSheetRef = useRef<(() => void) | null>(null);
+  const [textSelections] = useState(() => ({
+    title: createEditorTextSelection(),
+    body: createEditorTextSelection(),
+  }));
 
   const [measuredSheetCollapsedHeight, setMeasuredSheetCollapsedHeight] = useState<number | null>(null);
   const sheetPeek = (measuredSheetCollapsedHeight ?? EDITOR_SHEET_COLLAPSED_CONTENT + insets.bottom) + spacing.md;
@@ -104,6 +115,16 @@ export default function EditorScreen() {
 
   const collapseSheet = () => {
     collapseSheetRef.current?.();
+  };
+  const focusText = (field: TextField) => {
+    finishTextGroup();
+    textSelections[field].reset(item?.[field] ?? "");
+    collapseSheet();
+  };
+  const changeText = (field: TextField, value: string) => {
+    if (!item) return;
+    if (textSelections[field].change(item[field], value)) finishTextGroup();
+    update({ [field]: value });
   };
 
   useEffect(() => {
@@ -209,6 +230,11 @@ export default function EditorScreen() {
       <EditorHeader
         backColor={backColor}
         status={displayStatus}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        textHistoryDisabled={!editable}
+        onUndo={undoText}
+        onRedo={redoText}
         deleteDisabled={!editable}
         backDisabled={deleting || deleteRequested}
         onBack={() => router.back()}
@@ -268,9 +294,10 @@ export default function EditorScreen() {
             <TextInput
               accessibilityLabel="Título"
               value={item.title}
-              onBlur={finishTitleEditing}
-              onChangeText={(title) => update({ title })}
-              onFocus={collapseSheet}
+              onBlur={() => { finishTextGroup(); finishTitleEditing(); }}
+              onChangeText={(title) => changeText("title", title)}
+              onFocus={() => focusText("title")}
+              onSelectionChange={({ nativeEvent }) => textSelections.title.select(nativeEvent.selection)}
               editable={editable}
               placeholder="Título"
               placeholderTextColor={mutedText}
@@ -292,8 +319,10 @@ export default function EditorScreen() {
           <TextInput
             accessibilityLabel={isTask ? "Detalhes da tarefa" : "Texto da anotação"}
             value={item.body}
-            onChangeText={(body) => update({ body })}
-            onFocus={collapseSheet}
+            onChangeText={(body) => changeText("body", body)}
+            onFocus={() => focusText("body")}
+            onBlur={finishTextGroup}
+            onSelectionChange={({ nativeEvent }) => textSelections.body.select(nativeEvent.selection)}
             editable={editable}
             placeholder={
               isTask ? "Detalhes da tarefa (opcional)…" : "Anote algo…"

@@ -10,6 +10,11 @@ type Props = {
   status?: SaveStatus;
   deleteDisabled: boolean;
   backDisabled?: boolean;
+  canUndo?: boolean;
+  canRedo?: boolean;
+  textHistoryDisabled?: boolean;
+  onUndo?: () => void;
+  onRedo?: () => void;
   onBack: () => void;
   onDelete?: () => void;
 };
@@ -19,6 +24,11 @@ export function EditorHeader({
   status,
   deleteDisabled,
   backDisabled = false,
+  canUndo = false,
+  canRedo = false,
+  textHistoryDisabled = false,
+  onUndo,
+  onRedo,
   onBack,
   onDelete,
 }: Props) {
@@ -38,12 +48,30 @@ export function EditorHeader({
       <View style={styles.center} pointerEvents="none">
         {status ? <SaveIndicator status={status} /> : null}
       </View>
+      {([
+        { name: "undo", label: "Desfazer", available: canUndo, onPress: onUndo },
+        { name: "redo", label: "Refazer", available: canRedo, onPress: onRedo },
+      ] as const).map(({ name, label, available, onPress }) => {
+        const disabled = textHistoryDisabled || !available || !onPress;
+        return (
+          <Pressable
+            key={name}
+            accessibilityRole="button"
+            accessibilityLabel={label}
+            accessibilityState={{ disabled }}
+            disabled={disabled}
+            onPress={onPress}
+            style={[styles.action, { opacity: disabled ? 0.4 : 1 }]}
+          >
+            <AppIcon name={name} size={iconSize.md} color={colors.textSecondary} />
+          </Pressable>
+        );
+      })}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Excluir"
         onPress={onDelete}
         disabled={deleteDisabled}
-        hitSlop={spacing.sm}
         style={[styles.action, { opacity: deleteDisabled ? 0.4 : 1 }]}
       >
         <AppIcon name="trash" size={iconSize.md} color={colors.danger} />
@@ -69,6 +97,7 @@ const styles = StyleSheet.create({
   },
   center: {
     flex: 1,
+    minWidth: 0,
     minHeight: touchTarget,
     alignItems: "center",
     justifyContent: "center",
