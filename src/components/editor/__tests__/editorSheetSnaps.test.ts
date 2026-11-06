@@ -66,3 +66,12 @@ describe("resolveContentLayoutHeight", () => {
     ).toEqual({ openHeight: 280, sheetHeight: null });
   });
 });
+
+test('uses measured enlarged header without shrinking the normal collapsed size', () => {
+  expect(editorSheetCollapsedHeight(24, 96)).toBe(120);
+  expect(editorSheetCollapsedHeight(24, 40)).toBe(80);
+});
+test('reserves the larger of the top safe area and the existing chrome reserve', () => {
+  expect(clampEditorSheetOpenHeight(900, 80, 600, 100)).toBe(500);
+  expect(clampEditorSheetOpenHeight(900, 80, 600, 20)).toBe(536);
+});

@@ -2,8 +2,8 @@ export const EDITOR_SHEET_COLLAPSED_CONTENT = 56;
 const TOP_RESERVE = 64;
 
 /** Collapsed sheet height: handle row + bottom safe inset. */
-export function editorSheetCollapsedHeight(bottomInset: number): number {
-  return EDITOR_SHEET_COLLAPSED_CONTENT + bottomInset;
+export function editorSheetCollapsedHeight(bottomInset: number, headerHeight = EDITOR_SHEET_COLLAPSED_CONTENT): number {
+  return Math.max(EDITOR_SHEET_COLLAPSED_CONTENT, headerHeight) + bottomInset;
 }
 
 /**
@@ -13,9 +13,10 @@ export function editorSheetCollapsedHeight(bottomInset: number): number {
 export function clampEditorSheetOpenHeight(
   measuredContentHeight: number,
   collapsed: number,
-  windowHeight: number
+  windowHeight: number,
+  topInset = 0
 ): number {
-  const maxCap = Math.max(collapsed, windowHeight - TOP_RESERVE);
+  const maxCap = Math.max(collapsed, windowHeight - Math.max(TOP_RESERVE, topInset));
   return Math.min(
     Math.max(collapsed, Math.round(measuredContentHeight)),
     maxCap

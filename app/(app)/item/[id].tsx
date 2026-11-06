@@ -84,7 +84,8 @@ export default function EditorScreen() {
   const displayStatus = !online && localPersistence === "saved" && status !== "saved" ? "draft" : status;
   const collapseSheetRef = useRef<(() => void) | null>(null);
 
-  const sheetPeek = EDITOR_SHEET_COLLAPSED_CONTENT + insets.bottom + spacing.md;
+  const [measuredSheetCollapsedHeight, setMeasuredSheetCollapsedHeight] = useState<number | null>(null);
+  const sheetPeek = (measuredSheetCollapsedHeight ?? EDITOR_SHEET_COLLAPSED_CONTENT + insets.bottom) + spacing.md;
   const routeColor = parseItemColor(
     Array.isArray(colorParam) ? colorParam[0] : colorParam
   );
@@ -316,6 +317,7 @@ export default function EditorScreen() {
 
       <EditorOptionsSheet
         collapseRef={collapseSheetRef}
+        onCollapsedHeightChange={setMeasuredSheetCollapsedHeight}
         online={editable}
         isTask={isTask}
         color={item.color}

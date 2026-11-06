@@ -1,6 +1,6 @@
 import { createElement } from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
-import { Text, TextInput } from 'react-native';
+import { Text, TextInput, ScrollView, StyleSheet } from 'react-native';
 const mockBack = jest.fn();
 const mockFinishTitle = jest.fn();
 let mockOnline = true;
@@ -66,4 +66,11 @@ test('shows durable local edits as a draft while a network write waits offline',
   mockOnline = false; mockState.status = 'saving'; mockState.localPersistence = 'saved';
   render();
   expect(tree.root.findByType(SaveIndicator).findByType(Text).props.children).toBe('Rascunho neste aparelho');
+});
+
+test('reserves space below editor text for the measured enlarged options header', () => {
+  render();
+  act(() => tree.root.findByType(EditorOptionsSheet).props.onCollapsedHeightChange(120));
+  const scroll = tree.root.findByType(ScrollView);
+  expect(StyleSheet.flatten(scroll.props.contentContainerStyle).paddingBottom).toBe(136);
 });
