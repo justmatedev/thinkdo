@@ -24,6 +24,9 @@ expo-env.d.ts
 # agent scratch (SDD ledger, briefs, reports)
 .superpowers/
 
+# local documentation
+/docs/
+
 # debug
 npm-debug.*
 yarn-debug.*
