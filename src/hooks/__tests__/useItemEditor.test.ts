@@ -62,6 +62,184 @@ beforeEach(async () => {
   mockUpdate.mockReset().mockResolvedValue(undefined);
 });
 afterEach(() => jest.useRealTimers());
+test.each(['note', 'task'] as const)('undoes and redoes text with durable autosave for a %s', async type => {
+  mockGet.mockResolvedValue({ ...item, type });
+  const hook = await load();
+  expect(hook.current.canUndo).toBe(false);
+  act(() => { hook.current.update({ title: 'Changed' }); hook.current.update({ body: 'New body' }); });
+  act(() => hook.current.undoText());
+  expect(hook.current.item?.body).toBe('Original');
+  expect(hook.current.item?.title).toBe('Changed');
+  await act(async () => {});
+  expect((await readEditorDraft('u1', 'a'))?.patch).toEqual({ title: 'Changed', body: 'Original' });
+  await act(async () => { jest.advanceTimersByTime(500); });
+  expect(mockUpdate).toHaveBeenLastCalledWith('u1', 'a', { title: 'Changed', body: 'Original' });
+  act(() => hook.current.redoText());
+  expect(hook.current.item?.body).toBe('New body');
+  await act(async () => { jest.advanceTimersByTime(500); });
+  expect(mockUpdate).toHaveBeenLastCalledWith('u1', 'a', { body: 'New body' });
+  act(() => { hook.current.undoText(); hook.current.undoText(); });
+  expect(hook.current.item?.title).toBe('Title');
+  expect(hook.current.canUndo).toBe(false);
+  hook.unmount();
+});
+
+test('undo preserves metadata and metadata edits preserve redo but close typing groups', async () => {
+  const hook = await load();
+  act(() => hook.current.update({ body: 'Originala' }));
+  act(() => hook.current.update({ color: 'blue', done: true }));
+  act(() => hook.current.update({ body: 'Originalab' }));
+  act(() => hook.current.undoText());
+  expect(hook.current.item).toMatchObject({ body: 'Originala', color: 'blue', done: true });
+  await act(async () => { jest.advanceTimersByTime(500); });
+  mockUpdate.mockClear();
+  act(() => hook.current.undoText());
+  await act(async () => { jest.advanceTimersByTime(500); });
+  expect(mockUpdate).toHaveBeenCalledWith('u1', 'a', { body: 'Original' });
+  act(() => hook.current.update({ reminder: { kind: 'daily', hour: 9, minute: 0 } }));
+  expect(hook.current.canRedo).toBe(true);
+  act(() => hook.current.redoText());
+  expect(hook.current.item?.body).toBe('Originala');
+  act(() => hook.current.update({ body: 'Branch' }));
+  expect(hook.current.canRedo).toBe(false);
+  hook.unmount();
+});
+
+test.each([false, true])('a late save cannot overwrite undo (rejected=%s)', async rejected => {
+  const write = deferred<void>(); mockUpdate.mockReturnValueOnce(write.promise);
+  const hook = await load();
+  act(() => hook.current.update({ body: 'First' }));
+  await act(async () => { jest.advanceTimersByTime(500); });
+  act(() => hook.current.undoText());
+  await act(async () => { jest.advanceTimersByTime(500); });
+  await act(async () => rejected ? write.reject(new Error('offline')) : write.resolve());
+  expect(hook.current.item?.body).toBe('Original');
+  expect(hook.current.canRedo).toBe(true);
+  await act(async () => hook.current.retrySave());
+  expect(mockUpdate).toHaveBeenLastCalledWith('u1', 'a', { body: 'Original' });
+  expect(hook.current.status).toBe('saved');
+  hook.unmount();
+});
+
+test('local persistence failure keeps undo usable and validation follows restored text', async () => {
+  const hook = await load();
+  jest.spyOn(AsyncStorage, 'setItem').mockRejectedValueOnce(new Error('full'));
+  act(() => hook.current.update({ body: 'x'.repeat(100001) }));
+  await act(async () => {});
+  expect(hook.current.fieldErrors.body).toBeTruthy();
+  expect(hook.current.localPersistence).toBe('error');
+  act(() => hook.current.undoText());
+  expect(hook.current.fieldErrors.body).toBeUndefined();
+  expect(hook.current.item?.body).toBe('Original');
+  await act(async () => { jest.advanceTimersByTime(500); });
+  expect(mockUpdate).toHaveBeenLastCalledWith('u1', 'a', { body: 'Original' });
+  hook.unmount();
+});
+
+test.each(['recover', 'discard'])('%s draft establishes an empty history', async choice => {
+  await writeEditorDraft({ version: 1, uid: 'u1', itemId: 'a', revision: 'stored',
+    patch: { body: 'Local' }, original: { body: 'Original' } });
+  const hook = await load();
+  act(() => { hook.current.undoText(); hook.current.redoText(); hook.current.update({ body: 'Blocked' }); });
+  expect(hook.current.item?.body).toBe('Original');
+  await act(async () => choice === 'recover' ? hook.current.recoverDraft() : hook.current.discardDraft());
+  expect(hook.current.item?.body).toBe(choice === 'recover' ? 'Local' : 'Original');
+  expect(hook.current.canUndo).toBe(false);
+  expect(hook.current.canRedo).toBe(false);
+  act(() => hook.current.update({ body: 'Next' }));
+  act(() => hook.current.undoText());
+  expect(hook.current.item?.body).toBe(choice === 'recover' ? 'Local' : 'Original');
+  hook.unmount();
+});
+
+test('text history cannot leak across items, accounts, remounts or stale callbacks', async () => {
+  let id = 'a';
+  const hook = renderHook(() => useItemEditor(id));
+  await act(async () => {});
+  act(() => hook.current.update({ body: 'Private' }));
+  const staleUndo = hook.current.undoText;
+  id = 'b'; hook.rerender();
+  await act(async () => {});
+  expect(hook.current.canUndo).toBe(false);
+  act(() => hook.current.update({ body: 'Other' }));
+  beginInboxSession('u2'); mockUid = 'u2'; hook.rerender();
+  await act(async () => {});
+  expect(hook.current.canUndo).toBe(false);
+  act(() => staleUndo());
+  expect(hook.current.item?.body).toBe('Original');
+  hook.unmount();
+  await act(async () => {});
+  const reopened = await load('b');
+  expect(reopened.current.canUndo).toBe(false);
+  reopened.unmount();
+});
+
+test('undo and redo are blocked once deletion or session invalidation starts', async () => {
+  const hook = await load();
+  act(() => hook.current.update({ body: 'Keep' }));
+  let removal!: Promise<void>;
+  act(() => { removal = hook.current.remove(); hook.current.undoText(); });
+  expect(hook.current.item?.body).toBe('Keep');
+  await act(async () => removal);
+  act(() => hook.current.undoText());
+  expect(hook.current.item?.body).toBe('Keep');
+  hook.unmount();
+  const other = await load();
+  act(() => other.current.update({ body: 'Private' }));
+  invalidateInboxSession();
+  act(() => other.current.undoText());
+  expect(other.current.item?.body).toBe('Private');
+  other.unmount();
+});
+
+test('automatic blank-title restoration preserves body history without blank-title cycles', async () => {
+  const hook = await load();
+  act(() => hook.current.update({ title: '' }));
+  act(() => hook.current.undoText());
+  expect(hook.current.item?.title).toBe('Title');
+  act(() => hook.current.redoText());
+  expect(hook.current.fieldErrors.title).toBeTruthy();
+  act(() => hook.current.update({ body: 'Body edit' }));
+  act(() => hook.current.finishTitleEditing());
+  expect(hook.current.item?.title).toBe('Title');
+  act(() => hook.current.undoText());
+  expect(hook.current.item?.body).toBe('Original');
+  expect(hook.current.canUndo).toBe(false);
+  act(() => hook.current.redoText());
+  expect(hook.current.item?.title).toBe('Title');
+  hook.unmount();
+});
+
+test('actual title normalization drops incompatible title history, ordinary save preserves it', async () => {
+  const hook = await load();
+  act(() => hook.current.update({ title: 'New' }));
+  await act(async () => { jest.advanceTimersByTime(500); });
+  expect(hook.current.canUndo).toBe(true);
+  act(() => { hook.current.update({ body: 'Changed' }); hook.current.update({ title: '  Spaced  ' }); });
+  await act(async () => { jest.advanceTimersByTime(500); });
+  expect(hook.current.item?.title).toBe('Spaced');
+  act(() => hook.current.undoText());
+  expect(hook.current.item?.body).toBe('Original');
+  expect(hook.current.item?.title).toBe('Spaced');
+  expect(hook.current.canUndo).toBe(false);
+  hook.unmount();
+});
+
+test('background and explicit boundary close groups without clearing history', async () => {
+  let listener: (state: AppStateStatus) => void = () => {};
+  jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, fn) => { listener = fn; return { remove: jest.fn() }; });
+  const hook = await load();
+  act(() => hook.current.update({ body: 'Originala' }));
+  await act(async () => listener('background'));
+  act(() => hook.current.update({ body: 'Originalab' }));
+  act(() => hook.current.undoText());
+  expect(hook.current.item?.body).toBe('Originala');
+  act(() => { hook.current.redoText(); hook.current.finishTextGroup(); hook.current.update({ body: 'Originalabc' }); });
+  act(() => hook.current.undoText());
+  expect(hook.current.item?.body).toBe('Originalab');
+  hook.unmount();
+});
+
 test("reports a failed read and retries without remaining in loading state", async () => {
   mockGet.mockRejectedValueOnce(new Error("denied"));
   const hook = await load();

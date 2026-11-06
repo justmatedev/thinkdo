@@ -9,6 +9,10 @@ import { getInboxSession, isInboxSessionCurrent } from "@/widgets/snapshot/sessi
 import { clearEditorDraft, readEditorDraft, writeEditorDraft, type EditorDraft } from "@/features/editor/editorDrafts";
 import { validateEditorText, type EditorFieldErrors } from "@/features/editor/editorValidation";
 import { runEditorOperation } from "@/features/editor/editorOperations";
+import {
+  closeTextGroup, createTextHistory, invalidateTextField, recordTextEdit,
+  redoTextEdit, textHistoryAvailability, undoTextEdit, type TextField,
+} from "@/features/editor/editorTextHistory";
 import type { Item, SaveStatus, UpdateItemInput } from "@/types/item";
 
 const AUTOSAVE_MS = 500;
@@ -16,6 +20,8 @@ let nextRevision = 0;
 const revisionId = () => `${Date.now()}:${++nextRevision}`;
 type Field = keyof UpdateItemInput;
 type EditorState = {
+  canUndo: boolean;
+  canRedo: boolean;
   item: Item | null;
   loading: boolean;
   loadError: Error | null;
@@ -35,7 +41,9 @@ type EditorState = {
 function createEditorSession(uid: string | undefined, itemId: string) {
   const session = uid ? getInboxSession(uid) : null;
   const current = () => isInboxSessionCurrent(session);
+  let textHistory = createTextHistory();
   let state: EditorState = {
+    canUndo: false, canRedo: false,
     item: null, loading: true, loadError: null, notFound: false, missing: false,
     status: "saved", localPersistence: "idle", fieldErrors: {}, titleHint: null,
     permissionDenied: false, recoveryDraft: null, recoveryConflicts: [], deleting: false, deleteError: null,
@@ -55,7 +63,7 @@ function createEditorSession(uid: string | undefined, itemId: string) {
   let scheduleVersion = 0;
   let removeAppState: (() => void) | undefined;
   const emit = (patch: Partial<EditorState>) => {
-    state = { ...state, ...patch };
+    state = { ...state, ...patch, ...textHistoryAvailability(textHistory) };
     if (active) listeners.forEach((listener) => listener());
   };
   const stopTimer = () => { if (timer) clearTimeout(timer); timer = undefined; };
@@ -123,7 +131,11 @@ function createEditorSession(uid: string | undefined, itemId: string) {
       for (const field of Object.keys(patch) as Field[]) {
         if (fieldVersions[field] === versions[field]) {
           delete pending[field];
-          if (state.item) emit({ item: { ...state.item, [field]: patch[field] } });
+          if (state.item) {
+            if (field === "title" && state.item.title !== patch.title)
+              textHistory = invalidateTextField(textHistory, "title");
+            emit({ item: { ...state.item, [field]: patch[field] } });
+          }
         }
       }
       if (fields().length) {
@@ -148,8 +160,10 @@ function createEditorSession(uid: string | undefined, itemId: string) {
     inFlight = operation.finally(() => { inFlight = null; });
     return inFlight;
   };
-  const update = (patch: UpdateItemInput) => {
-    if (!uid || !state.item || !active || !current() || state.recoveryDraft || state.deleting || deleted) return;
+  const canEdit = () => !!uid && !!state.item && active && current() && !state.recoveryDraft && !state.deleting && !deleted;
+  const finishTextGroup = () => { textHistory = closeTextGroup(textHistory); };
+  const applyPatch = (patch: UpdateItemInput) => {
+    if (!canEdit() || !state.item) return;
     ++editVersion;
     for (const field of Object.keys(patch) as Field[]) fieldVersions[field] = editVersion;
     pending = { ...pending, ...patch };
@@ -159,12 +173,30 @@ function createEditorSession(uid: string | undefined, itemId: string) {
     stopTimer();
     timer = setTimeout(() => { timer = undefined; void flush(); }, AUTOSAVE_MS);
   };
+  const update = (patch: UpdateItemInput) => {
+    if (!canEdit() || !state.item) return;
+    if (Object.keys(patch).some(field => field !== "title" && field !== "body")) finishTextGroup();
+    for (const field of ["title", "body"] as TextField[]) {
+      const after = patch[field];
+      if (after !== undefined)
+        textHistory = recordTextEdit(textHistory, { field, before: state.item[field], after, at: Date.now() });
+    }
+    applyPatch(patch);
+  };
+  const restoreText = (direction: "undo" | "redo") => {
+    if (!canEdit()) return;
+    const result = direction === "undo" ? undoTextEdit(textHistory) : redoTextEdit(textHistory);
+    textHistory = result.history;
+    if (result.patch) applyPatch(result.patch);
+  };
   const finishTitleEditing = () => {
+    finishTextGroup();
     if (!state.item || !confirmed || state.recoveryDraft || state.deleting || state.item.title.trim()) return;
     const title = resolveEditorTitle(state.item.title, confirmed.title);
     if (title !== state.item.title) {
       const empty = !state.item.title.trim();
-      update({ title });
+      textHistory = invalidateTextField(textHistory, "title");
+      applyPatch({ title });
       if (empty) emit({ titleHint: "Título vazio. O último título válido foi restaurado." });
     }
   };
@@ -176,6 +208,7 @@ function createEditorSession(uid: string | undefined, itemId: string) {
       const [item, stored] = await runEditorOperation(uid, itemId, () =>
         Promise.all([getItem(uid, itemId), readEditorDraft(uid, itemId)]));
       if (!active || version !== readVersion || !current()) return;
+      textHistory = createTextHistory();
       confirmed = item;
       draft = stored;
       const conflicts = item && stored ? (Object.keys(stored.patch) as Field[]).filter((field) =>
@@ -206,11 +239,15 @@ function createEditorSession(uid: string | undefined, itemId: string) {
       await flush();
     },
     finishTitleEditing,
+    finishTextGroup,
+    undoText: () => restoreText("undo"),
+    redoText: () => restoreText("redo"),
     recoverDraft() {
       if (!state.item || !state.recoveryDraft || !current()) return;
       const patch = state.recoveryDraft.patch;
+      textHistory = createTextHistory();
       emit({ recoveryDraft: null, recoveryConflicts: [] });
-      update(patch);
+      applyPatch(patch);
     },
     async discardDraft() {
       if (!uid || !state.recoveryDraft || !current()) return;
@@ -219,6 +256,7 @@ function createEditorSession(uid: string | undefined, itemId: string) {
         await clearEditorDraft(uid, itemId, stored.revision);
         if (!active || !current()) return;
         draft = null;
+        textHistory = createTextHistory();
         emit({ recoveryDraft: null, recoveryConflicts: [], status: "saved", localPersistence: "idle", notFound: state.missing });
       } catch { emit({ localPersistence: "error" }); }
     },
@@ -253,7 +291,7 @@ function createEditorSession(uid: string | undefined, itemId: string) {
       active = true;
       void load();
       const subscription = AppState.addEventListener("change", (next) => {
-        if (next !== "active") { finishTitleEditing(); void flush(); }
+        if (next !== "active") { finishTextGroup(); finishTitleEditing(); void flush(); }
       });
       removeAppState = () => subscription.remove();
     },
@@ -274,6 +312,7 @@ export function useItemEditor(itemId: string) {
   const state = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
   useEffect(() => { session.start(); return () => session.dispose(); }, [session]);
   return { ...state, update: session.update, convert: session.convert, remove: session.remove,
+    undoText: session.undoText, redoText: session.redoText, finishTextGroup: session.finishTextGroup,
     retryLoad: session.retryLoad, retrySave: session.retrySave, finishTitleEditing: session.finishTitleEditing,
     recoverDraft: session.recoverDraft, discardDraft: session.discardDraft };
 }
