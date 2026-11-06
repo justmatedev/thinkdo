@@ -10,6 +10,8 @@ Anote uma ideia antes que ela escape, organize suas pendências e receba lembret
 
 Feito para o dia a dia, com interface em **português**, temas claro e escuro e sincronização na nuvem.
 
+[**Baixar na Google Play**](https://play.google.com/store/apps/details?id=com.justmate.thinkdo)
+
 <table>
   <tr>
     <td align="center" width="25%">
