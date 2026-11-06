@@ -69,6 +69,7 @@ type Props = {
   color: ItemColor | null;
   reminder: ItemReminder | null;
   permissionDeniedHint?: boolean;
+  reminderPaused?: boolean;
   onConvert: () => void;
   onColorChange: (color: ItemColor | null) => void;
   onReminderChange: (reminder: ItemReminder | null) => void;
@@ -81,6 +82,7 @@ export function EditorOptionsSheet({
   color,
   reminder,
   permissionDeniedHint = false,
+  reminderPaused = false,
   onConvert,
   onColorChange,
   onReminderChange,
@@ -359,6 +361,7 @@ export function EditorOptionsSheet({
               reminder={reminder}
               online={online}
               permissionDeniedHint={permissionDeniedHint}
+              paused={reminderPaused}
               mutedColor={muted}
               accentColor={swatchColor}
               onChange={onReminderChange}

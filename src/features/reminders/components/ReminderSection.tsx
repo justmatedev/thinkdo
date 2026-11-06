@@ -22,6 +22,7 @@ type Props = {
   reminder: ItemReminder | null;
   online: boolean;
   permissionDeniedHint?: boolean;
+  paused?: boolean;
   mutedColor: string;
   accentColor: string;
   onChange: (next: ItemReminder | null) => void;
@@ -36,6 +37,7 @@ export function ReminderSection({
   reminder,
   online,
   permissionDeniedHint = false,
+  paused = false,
   mutedColor,
   accentColor,
   onChange,
@@ -119,6 +121,8 @@ export function ReminderSection({
           />
         </Pressable>
       )}
+
+      {reminder && paused ? <Text style={{ color: mutedColor, fontSize: fontSize.meta }}>Lembrete pausado: tarefa concluída</Text> : null}
 
       {permissionDeniedHint ? (
         <Pressable

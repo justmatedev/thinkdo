@@ -58,7 +58,7 @@ Uma ideia para depois, a lista de compras, algo para estudar ou uma tarefa que v
 
 O Thinkdo é um projeto pessoal em uso diário, com foco em **Android**. Este repositório ainda não oferece um link público de instalação. Para executar sua própria versão, siga o [guia de desenvolvimento local](#desenvolvimento-local).
 
-O app usa uma conta para sincronizar os dados. Sem conexão, a escrita fica pausada e o app exibe um aviso; a edição offline ainda não faz parte do escopo atual. Os lembretes são agendados no aparelho em que você usa o app.
+O app usa uma conta para sincronizar os dados. Sem conexão, a escrita fica pausada e o app exibe um aviso; a edição offline ainda não faz parte do escopo atual. Os lembretes são agendados no aparelho em que você usa o app. Concluir uma tarefa pausa seus lembretes sem apagar a configuração; reabrir retoma os próximos horários válidos, sem disparar lembretes únicos vencidos.
 
 ---
 

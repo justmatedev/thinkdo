@@ -51,3 +51,14 @@ describe("deleteItemsWithReminders", () => {
     expect(deleteItem).not.toHaveBeenCalledWith("u1", "a");
   });
 });
+
+test('restores reminders for an item whose deletion failed', async () => {
+  const restoreItemReminder = jest.fn(async () => {});
+  const result = await deleteItemsWithReminders('u1', ['a'], {
+    cancelItemReminder: jest.fn(async () => {}),
+    deleteItem: jest.fn(async () => { throw new Error('offline'); }),
+    restoreItemReminder,
+  });
+  expect(result.failed).toEqual(['a']);
+  expect(restoreItemReminder).toHaveBeenCalledWith('u1', 'a');
+});

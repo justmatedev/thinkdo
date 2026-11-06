@@ -89,7 +89,7 @@ export async function requestReminderPermissions(): Promise<boolean> {
   return requested.status === "granted";
 }
 
-export async function cancelItemReminder(itemId: string): Promise<void> {
+async function cancelScheduledItemReminder(itemId: string): Promise<void> {
   if (Platform.OS === "web") return;
   await Promise.all(
     reminderNotificationIdsForItem(itemId).map(async (id) => {
@@ -103,39 +103,58 @@ export async function cancelItemReminder(itemId: string): Promise<void> {
 }
 
 let reminderGeneration = 0;
+let reconciliationVersion = 0;
 const activeSchedules = new Set<Promise<void>>();
+const itemQueues = new Map<string, Promise<void>>();
+const itemVersions = new Map<string, number>();
+let nextItemVersion = 0;
+
+function enqueueItem(itemId: string, operation: (isLatest: () => boolean) => Promise<void>): Promise<void> {
+  const version = ++nextItemVersion;
+  itemVersions.set(itemId, version);
+  const result = (itemQueues.get(itemId) ?? Promise.resolve()).catch(() => {}).then(() =>
+    operation(() => itemVersions.get(itemId) === version));
+  itemQueues.set(itemId, result);
+  activeSchedules.add(result);
+  void result.finally(() => {
+    activeSchedules.delete(result);
+    if (itemQueues.get(itemId) === result) {
+      itemQueues.delete(itemId);
+    }
+  }).catch(() => {});
+  return result;
+}
+
+export function cancelItemReminder(itemId: string): Promise<void> {
+  return enqueueItem(itemId, () => cancelScheduledItemReminder(itemId));
+}
 
 export function scheduleItemReminder(
   item: Item,
   isSessionCurrent: () => boolean = () => true,
 ): Promise<void> {
   const generation = reminderGeneration;
-  const operation = schedule(
+  return enqueueItem(item.id, (isLatest) => schedule(
     item,
-    () => generation === reminderGeneration && isSessionCurrent(),
-  );
-  activeSchedules.add(operation);
-  void operation
-    .finally(() => activeSchedules.delete(operation))
-    .catch(() => {});
-  return operation;
+    () => generation === reminderGeneration && isLatest() && isSessionCurrent(),
+  ));
 }
 
 async function schedule(item: Item, isCurrent: () => boolean): Promise<void> {
   if (Platform.OS === "web" || !isCurrent()) return;
-  if (!item.reminder || !isReminderSchedulable(item.reminder)) {
-    await cancelItemReminder(item.id);
+  if ((item.type === "task" && item.done) || !item.reminder || !isReminderSchedulable(item.reminder)) {
+    await cancelScheduledItemReminder(item.id);
     return;
   }
   const granted = await getReminderPermissionGranted();
   if (!isCurrent()) return;
   if (!granted) {
-    await cancelItemReminder(item.id);
+    await cancelScheduledItemReminder(item.id);
     return;
   }
   await ensureReminderChannel();
   if (!isCurrent()) return;
-  await cancelItemReminder(item.id);
+  await cancelScheduledItemReminder(item.id);
   if (!isCurrent()) return;
   const content = notificationContent(item);
   const triggers = buildReminderTriggers(item.reminder);
@@ -153,24 +172,30 @@ async function schedule(item: Item, isCurrent: () => boolean): Promise<void> {
       }),
     ),
   );
+  // A native scheduling call cannot be aborted; clear its result before the next queued operation.
+  if (!isCurrent()) await cancelScheduledItemReminder(item.id);
 }
 
 export async function reconcileReminders(items: Item[]): Promise<void> {
   if (Platform.OS === "web") return;
   const generation = reminderGeneration;
+  const version = ++reconciliationVersion;
+  const isCurrent = () => generation === reminderGeneration && version === reconciliationVersion;
+  const cleanupVersions = new Map(itemVersions);
   const living = new Set(items.map((i) => i.id));
-  for (const item of items) {
-    if (generation !== reminderGeneration) return;
-    await scheduleItemReminder(item);
-  }
+  // Reserve all requests before yielding, so a later completion/deletion can
+  // invalidate any item in this batch even while another item is awaiting native IO.
+  await Promise.all(items.map((item) => scheduleItemReminder(item, isCurrent)));
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-  if (generation !== reminderGeneration) return;
+  if (!isCurrent()) return;
   for (const n of scheduled) {
+    if (!isCurrent()) return;
     const id = n.identifier;
     if (!isReminderNotificationId(id)) continue;
     const itemId = itemIdFromReminderNotificationId(id);
-    if (!itemId || !living.has(itemId)) {
-      await Notifications.cancelScheduledNotificationAsync(id);
+    if (itemId && !living.has(itemId) && itemVersions.get(itemId) === cleanupVersions.get(itemId)) {
+      // Use the same item queue and skip schedules issued after this snapshot began.
+      await cancelItemReminder(itemId);
     }
   }
 }

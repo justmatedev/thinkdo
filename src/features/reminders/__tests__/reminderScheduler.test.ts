@@ -176,3 +176,114 @@ it('waits for an in-flight notification schedule before clearing on logout', asy
   await Promise.all([saving, logout]);
   expect(scheduled).toEqual([]);
 });
+
+describe('completed tasks and scheduling races', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockGetPermissions.mockResolvedValue({ status: 'granted' });
+    mockCancel.mockResolvedValue(undefined);
+    mockSchedule.mockResolvedValue(undefined);
+    mockSetChannel.mockResolvedValue(undefined);
+    mockGetAll.mockResolvedValue([]);
+  });
+  for (const reminder of [
+    { kind: 'once' as const, at: new Date('2099-01-01') },
+    { kind: 'daily' as const, hour: 9, minute: 0 },
+    { kind: 'weekly' as const, weekdays: [2 as const, 4 as const], hour: 9, minute: 0 },
+  ]) {
+    it(`pauses and resumes a completed task with ${reminder.kind} reminder`, async () => {
+      await scheduleItemReminder(item({ id: 'completed', type: 'task', done: true, reminder }));
+      expect(mockSchedule).not.toHaveBeenCalled();
+      expect(mockCancel).toHaveBeenCalledWith('reminder:completed');
+      await scheduleItemReminder(item({ id: 'completed', type: 'task', done: false, reminder }));
+      expect(mockSchedule).toHaveBeenCalled();
+    });
+  }
+  it('does not resume a past once reminder and ignores done on notes', async () => {
+    await scheduleItemReminder(item({ id: 'past', type: 'task', done: false, reminder: { kind: 'once', at: new Date(0) } }));
+    expect(mockSchedule).not.toHaveBeenCalled();
+    await scheduleItemReminder(item({ id: 'note', done: true, reminder: { kind: 'daily', hour: 9, minute: 0 } }));
+    expect(mockSchedule).toHaveBeenCalled();
+  });
+  it('a completion or deletion cancels an older schedule finishing late', async () => {
+    let finish!: () => void;
+    let started!: () => void;
+    const beginning = new Promise<void>(resolve => { started = resolve; });
+    const scheduled = new Set<string>();
+    mockCancel.mockImplementation(async (id: string) => { scheduled.delete(id); });
+    mockSchedule.mockImplementationOnce(async ({ identifier }: { identifier: string }) => {
+      started(); await new Promise<void>(resolve => { finish = resolve; }); scheduled.add(identifier);
+    });
+    const old = scheduleItemReminder(item({ id: 'race', reminder: { kind: 'daily', hour: 9, minute: 0 } }));
+    await beginning;
+    const cancellation = cancelItemReminder('race');
+    finish();
+    await Promise.all([old, cancellation]);
+    expect(scheduled.size).toBe(0);
+  });
+  it('the newest edit wins while an earlier schedule is waiting for permission', async () => {
+    let resolve!: (value: { status: string }) => void;
+    mockGetPermissions.mockImplementationOnce(() => new Promise(r => { resolve = r; }));
+    const old = scheduleItemReminder(item({ id: 'newest', title: 'Old', reminder: { kind: 'daily', hour: 9, minute: 0 } }));
+    // Let the old operation reach the permission boundary.
+    for (let n = 0; n < 5; n++) await Promise.resolve();
+    const latest = scheduleItemReminder(item({ id: 'newest', title: 'New', reminder: { kind: 'daily', hour: 10, minute: 0 } }));
+    resolve({ status: 'granted' });
+    await Promise.all([old, latest]);
+    expect(mockSchedule).toHaveBeenCalledTimes(1);
+    expect(mockSchedule).toHaveBeenCalledWith(expect.objectContaining({ trigger: expect.objectContaining({ hour: 10 }) }));
+  });
+});
+
+it('does not let an older reconciliation resume a task after a newer snapshot completed it', async () => {
+  jest.clearAllMocks();
+  let release!: (value: { status: string }) => void;
+  let started!: () => void;
+  const beginning = new Promise<void>(resolve => { started = resolve; });
+  mockGetPermissions.mockImplementationOnce(() => { started(); return new Promise(resolve => { release = resolve; }); });
+  mockGetPermissions.mockResolvedValue({ status: 'granted' });
+  mockCancel.mockResolvedValue(undefined);
+  mockSchedule.mockResolvedValue(undefined);
+  mockGetAll.mockResolvedValue([]);
+  const reminder = { kind: 'daily' as const, hour: 9, minute: 0 };
+  const old = reconcileReminders([item({ id: 'blocking', reminder }), item({ id: 'target', type: 'task', done: false, reminder })]);
+  await beginning;
+  await reconcileReminders([item({ id: 'target', type: 'task', done: true, reminder })]);
+  release({ status: 'granted' });
+  await old;
+  expect(mockSchedule).not.toHaveBeenCalledWith(expect.objectContaining({ identifier: 'reminder:target' }));
+});
+
+it('does not resurrect a deleted item from a reconciliation waiting on another item', async () => {
+  jest.clearAllMocks();
+  let release!: (value: { status: string }) => void;
+  let started!: () => void;
+  const beginning = new Promise<void>(resolve => { started = resolve; });
+  mockGetPermissions.mockImplementationOnce(() => { started(); return new Promise(resolve => { release = resolve; }); });
+  mockGetPermissions.mockResolvedValue({ status: 'granted' });
+  const scheduled = new Set<string>();
+  mockSchedule.mockImplementation(async ({ identifier }: { identifier: string }) => { scheduled.add(identifier); });
+  mockCancel.mockImplementation(async (id: string) => { scheduled.delete(id); });
+  mockGetAll.mockResolvedValue([]);
+  const reminder = { kind: 'daily' as const, hour: 9, minute: 0 };
+  const reconciliation = reconcileReminders([item({ id: 'blocking-delete', reminder }), item({ id: 'deleted-target', reminder })]);
+  await beginning;
+  await cancelItemReminder('deleted-target');
+  release({ status: 'granted' });
+  await reconciliation;
+  expect(scheduled.has('reminder:deleted-target')).toBe(false);
+});
+it('orphan cleanup cannot cancel an item scheduled after the reconciliation began', async () => {
+  jest.clearAllMocks();
+  let snapshot!: (value: { identifier: string }[]) => void;
+  mockGetAll.mockImplementationOnce(() => new Promise(resolve => { snapshot = resolve; }));
+  mockGetPermissions.mockResolvedValue({ status: 'granted' });
+  const scheduled = new Set<string>();
+  mockSchedule.mockImplementation(async ({ identifier }: { identifier: string }) => { scheduled.add(identifier); });
+  mockCancel.mockImplementation(async (id: string) => { scheduled.delete(id); });
+  const reconciliation = reconcileReminders([]);
+  await scheduleItemReminder(item({ id: 'newly-scheduled', reminder: { kind: 'daily', hour: 9, minute: 0 } }));
+  snapshot([{ identifier: 'reminder:newly-scheduled' }]);
+  await reconciliation;
+  expect(scheduled.has('reminder:newly-scheduled')).toBe(true);
+});

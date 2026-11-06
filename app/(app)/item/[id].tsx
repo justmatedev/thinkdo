@@ -282,6 +282,7 @@ export default function EditorScreen() {
         isTask={isTask}
         color={item.color}
         reminder={item.reminder}
+        reminderPaused={isTask && item.done}
         permissionDeniedHint={permissionDenied}
         onConvert={convert}
         onColorChange={(next) => update({ color: next })}
